@@ -1,0 +1,962 @@
+import { content, type Project, type SectionId } from "../content";
+import { icon, ledMark } from "./icons";
+
+const escapeHTML = (value: string): string =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+function safeHref(value: string): string {
+  if (
+    value.startsWith("/") ||
+    value.startsWith("#") ||
+    value.startsWith("mailto:") ||
+    value.startsWith("tel:") ||
+    /^https?:\/\//i.test(value)
+  ) {
+    return escapeHTML(value);
+  }
+  return "#";
+}
+
+function isExternal(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function externalAttrs(href: string): string {
+  return isExternal(href) ? ' target="_blank" rel="noreferrer noopener"' : "";
+}
+
+function arrowLink(label: string, href: string, className = "text-link"): string {
+  return `<a class="${className}" href="${safeHref(href)}" ${externalAttrs(href)}>
+    <span>${escapeHTML(label)}</span>${icon(isExternal(href) ? "external" : "arrow-right")}
+  </a>`;
+}
+
+function ledButton(
+  label: string,
+  opts: {
+    href?: string;
+    action?: string;
+    variant?: "solid" | "quiet";
+    iconName?: "arrow-right" | "arrow-up-right" | "download" | "compass" | "arrow-down";
+    extra?: string;
+    download?: string;
+  } = {},
+): string {
+  const variant = opts.variant ?? "solid";
+  const attrs = opts.href
+    ? `href="${safeHref(opts.href)}" ${externalAttrs(opts.href)} ${opts.download ? `download="${escapeHTML(opts.download)}"` : ""}`
+    : `type="button" ${opts.action ?? ""}`;
+  return `<a class="led-button led-button--${variant}" ${attrs} ${opts.extra ?? ""}>
+    <span class="led-button__label">${escapeHTML(label)}</span>
+    ${opts.iconName ? icon(opts.iconName, "led-button__icon") : ""}
+  </a>`;
+}
+
+function sceneMeta(section: (typeof content.nav)[number], index: number, total: number): string {
+  return `<div class="scene-meta">
+    <span class="scene-meta__index">${String(index + 1).padStart(2, "0")}</span>
+    <span class="scene-meta__rule" aria-hidden="true"></span>
+    <span class="scene-meta__eyebrow">${escapeHTML(section.eyebrow)}</span>
+    <span class="scene-meta__total" aria-hidden="true">${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}</span>
+  </div>`;
+}
+
+function sceneNote(
+  note: (typeof content.sceneNotes)[keyof typeof content.sceneNotes],
+  modifier: "about" | "education",
+): string {
+  return `<aside class="scene-note scene-note--${modifier}" aria-hidden="true">
+    <p class="scene-note__head">${icon("compass", "scene-note__icon")}${escapeHTML(note.label)}</p>
+    <p class="scene-note__title">${escapeHTML(note.title)}</p>
+    <p class="scene-note__body">${escapeHTML(note.body)}</p>
+    <p class="scene-note__meta">${escapeHTML(note.meta)}</p>
+  </aside>`;
+}
+
+function makeScene(
+  section: (typeof content.nav)[number],
+  index: number,
+  total: number,
+  body: string,
+): string {
+  return `<section class="scene scene--${section.id}" id="scene-${section.id}" data-scene="${section.id}" aria-labelledby="scene-title-${section.id}" aria-hidden="true" inert>
+    ${sceneMeta(section, index, total)}
+    ${body}
+  </section>`;
+}
+
+function buildHome(section: (typeof content.nav)[number], index: number, total: number): string {
+  return makeScene(
+    section,
+    index,
+    total,
+    `<div class="hero-copy" data-reveal>
+      <p class="hero-copy__role">${escapeHTML(content.identity.role)}</p>
+      <p class="hero-copy__tagline">${escapeHTML(content.identity.tagline)}</p>
+      <div class="hero-copy__actions">
+        <button class="led-button led-button--solid" type="button" data-goto="projects">
+          <span class="led-button__label">${escapeHTML(content.ui.viewWork)}</span>
+          ${icon("arrow-right", "led-button__icon")}
+        </button>
+        <button class="text-button" type="button" data-quick-view>
+          <span>${escapeHTML(content.ui.quickView)}</span>
+          ${icon("arrow-up-right")}
+        </button>
+      </div>
+      <p class="hero-copy__availability"><i aria-hidden="true"></i>${escapeHTML(content.identity.availability)}</p>
+    </div>
+    <h1 id="scene-title-home" class="sr-only">${escapeHTML(content.identity.name)} — ${escapeHTML(content.identity.role)}</h1>
+    <button class="egg-hotspot egg-hotspot--hat" type="button" data-egg="hat" aria-label="${escapeHTML(content.easterEggs.hat)}">
+      <span class="egg-hotspot__label">${escapeHTML(content.easterEggs.hat)}</span>
+    </button>`,
+  );
+}
+
+function buildAbout(section: (typeof content.nav)[number], index: number, total: number): string {
+  return makeScene(
+    section,
+    index,
+    total,
+    `<div class="about-panel" data-reveal>
+      <p class="lead">${escapeHTML(content.identity.bioLead)}</p>
+      <p class="body-copy">${escapeHTML(content.identity.bioBody)}</p>
+      <p class="aside-note">${escapeHTML(content.identity.bioNote)}</p>
+      <dl class="fact-list">
+        <div><dt>${escapeHTML(content.resume.facts[1].label)}</dt><dd>${escapeHTML(content.identity.location)}</dd></div>
+        <div><dt>${escapeHTML(content.resume.facts[0].label)}</dt><dd>${escapeHTML(content.identity.role)}</dd></div>
+        <div><dt>${escapeHTML(content.ui.awaiting)}</dt><dd>${escapeHTML(content.identity.availability)}</dd></div>
+      </dl>
+      <h2 id="scene-title-about" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+    </div>
+    ${sceneNote(content.sceneNotes.about, "about")}`,
+  );
+}
+
+function buildSkills(section: (typeof content.nav)[number], index: number, total: number): string {
+  const clusters = content.skills.groups
+    .map(
+      (group, groupIndex) => `<article class="skill-cluster" data-reveal style="--cluster-index:${groupIndex}">
+        <div class="skill-cluster__head">
+          <span class="skill-cluster__number">${String(groupIndex + 1).padStart(2, "0")}</span>
+          <span class="skill-cluster__dot" aria-hidden="true"></span>
+          <h3>${escapeHTML(group.label)}</h3>
+        </div>
+        <ul class="dot-list">
+          ${group.items.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}
+        </ul>
+      </article>`,
+    )
+    .join("");
+
+  return makeScene(
+    section,
+    index,
+    total,
+    `<div class="skills-field">
+      ${clusters}
+      <span class="skills-field__ring" aria-hidden="true"></span>
+    </div>
+    <aside class="skills-aside" data-reveal>
+      <h2 id="scene-title-skills" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+      <p class="body-copy">${escapeHTML(content.skills.intro)}</p>
+      <p class="annotation"><span aria-hidden="true"></span>${escapeHTML(content.skills.orbitLabel)}</p>
+    </aside>`,
+  );
+}
+
+function buildProjects(section: (typeof content.nav)[number], index: number, total: number): string {
+  const markers = content.projects.entries
+    .map((project, projectIndex) => {
+      const positions = [
+        ["17.1%", "72.6%"],
+        ["37.2%", "55.8%"],
+        ["52%", "42.7%"],
+        ["33%", "83%"],
+      ];
+      const [x, y] = positions[projectIndex] ?? positions[0];
+      return `<button type="button" class="island-marker" style="--x:${x};--y:${y}" data-project="${escapeHTML(project.id)}" aria-label="${escapeHTML(content.ui.selectProject)}: ${escapeHTML(project.title)}">
+        <span class="island-marker__pulse" aria-hidden="true"></span>
+        <span class="island-marker__number">${String(projectIndex + 1).padStart(2, "0")}</span>
+        <span class="island-marker__label">${escapeHTML(project.title)}</span>
+      </button>`;
+    })
+    .join("");
+
+  const projectRows = content.projects.entries
+    .map(
+      (project, projectIndex) => `<button type="button" class="project-row" data-project="${escapeHTML(project.id)}">
+        <span class="project-row__index">${String(projectIndex + 1).padStart(2, "0")}</span>
+        <span class="project-row__main">
+          <span class="project-row__title">${escapeHTML(project.title)}</span>
+          <span class="project-row__short">${escapeHTML(project.short)}</span>
+        </span>
+        ${icon("arrow-up-right", "project-row__arrow")}
+      </button>`,
+    )
+    .join("");
+
+  const panels = content.projects.entries
+    .map((project, projectIndex) => {
+      const tags = project.tech.map((tech) => `<li>${escapeHTML(tech)}</li>`).join("");
+      const links = project.links
+        .map(
+          (link) =>
+            `<a href="${safeHref(link.href)}" ${externalAttrs(link.href)}>${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right")}</a>`,
+        )
+        .join("");
+      return `<article class="project-detail" data-project-panel="${escapeHTML(project.id)}" hidden>
+        <button type="button" class="back-button" data-project-back>
+          ${icon("arrow-left")}<span>${escapeHTML(content.ui.backToMap)}</span>
+        </button>
+        <p class="project-detail__index">${escapeHTML(content.ui.selectProject)} / ${String(projectIndex + 1).padStart(2, "0")}</p>
+        <h3>${escapeHTML(project.title)}</h3>
+        <p class="project-detail__short">${escapeHTML(project.short)}</p>
+        <p class="project-detail__body">${escapeHTML(project.description)}</p>
+        <div class="project-detail__stack">
+          <span class="micro-label">${escapeHTML(content.ui.stackLabel)}</span>
+          <ul class="tag-list">${tags}</ul>
+        </div>
+        <div class="project-detail__links">
+          <span class="micro-label">${escapeHTML(content.ui.projectLinks)}</span>
+          <div class="link-row">${links}</div>
+        </div>
+      </article>`;
+    })
+    .join("");
+
+  return makeScene(
+    section,
+    index,
+    total,
+    `<div class="project-markers" aria-label="${escapeHTML(content.ui.projectIndex)}">
+      ${markers}
+      <button class="egg-hotspot egg-hotspot--ship" type="button" data-egg="ship" aria-label="${escapeHTML(content.easterEggs.ship)}">
+        <span class="egg-hotspot__label">${escapeHTML(content.easterEggs.ship)}</span>
+      </button>
+    </div>
+    <div class="project-dock" data-lenis-prevent>
+      <h2 id="scene-title-projects" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+      <div class="project-index" data-project-index data-reveal>
+        <div class="panel-head">
+          <span class="micro-label">${escapeHTML(content.ui.projectIndex)}</span>
+          <span class="panel-head__rule" aria-hidden="true"></span>
+          <span class="panel-head__count">${String(content.projects.entries.length).padStart(2, "0")}</span>
+        </div>
+        <p class="project-index__intro">${escapeHTML(content.projects.intro)}</p>
+        <div class="project-list" role="list">
+          ${projectRows}
+        </div>
+      </div>
+      <div class="project-details" data-project-details>
+        ${panels}
+      </div>
+    </div>`,
+  );
+}
+
+function buildEducation(section: (typeof content.nav)[number], index: number, total: number): string {
+  const entries = content.education.entries
+    .map(
+      (entry, entryIndex) => `<li class="timeline-entry">
+        <span class="timeline-entry__index">${String(entryIndex + 1).padStart(2, "0")}</span>
+        <div class="timeline-entry__copy">
+          <div class="timeline-entry__top">
+            <h3>${escapeHTML(entry.institution)}</h3>
+            <span>${escapeHTML(entry.period)}</span>
+          </div>
+          <p class="timeline-entry__qual">${escapeHTML(entry.qualification)}</p>
+          <p class="body-copy">${escapeHTML(entry.detail)}</p>
+        </div>
+      </li>`,
+    )
+    .join("");
+
+  return makeScene(
+    section,
+    index,
+    total,
+    `<div class="education-panel" data-reveal>
+      <h2 id="scene-title-education" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+      <p class="body-copy education-panel__intro">${escapeHTML(content.education.intro)}</p>
+      <ol class="timeline">${entries}</ol>
+    </div>
+    ${sceneNote(content.sceneNotes.education, "education")}`,
+  );
+}
+
+function buildExperience(section: (typeof content.nav)[number], index: number, total: number): string {
+  const entries = content.experience.entries
+    .map(
+      (entry) => `<li class="experience-entry">
+        <div class="experience-entry__top">
+          <span class="type-badge type-badge--${entry.type}">${escapeHTML(content.ui.experienceTypes[entry.type])}</span>
+          <span class="experience-entry__period">${escapeHTML(entry.period)}</span>
+        </div>
+        <h3>${escapeHTML(entry.role)}</h3>
+        <p class="experience-entry__place">${escapeHTML(entry.place)}</p>
+        <p class="body-copy">${escapeHTML(entry.detail)}</p>
+      </li>`,
+    )
+    .join("");
+
+  return makeScene(
+    section,
+    index,
+    total,
+    `<div class="experience-panel" data-lenis-prevent data-reveal>
+      <h2 id="scene-title-experience" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+      <p class="body-copy experience-panel__intro">${escapeHTML(content.experience.intro)}</p>
+      <ol class="experience-list">${entries}</ol>
+      <p class="experience-scroll-cue" aria-hidden="true"><span>${escapeHTML(content.ui.scrollExperience)}</span><span>↓</span></p>
+    </div>`,
+  );
+}
+
+function buildResume(section: (typeof content.nav)[number], index: number, total: number): string {
+  const facts = content.resume.facts
+    .map((fact) => `<div><dt>${escapeHTML(fact.label)}</dt><dd>${escapeHTML(fact.value)}</dd></div>`)
+    .join("");
+  return makeScene(
+    section,
+    index,
+    total,
+    `<aside class="resume-side" data-reveal>
+      <h2 id="scene-title-resume" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+      <p class="lead">${escapeHTML(content.resume.intro)}</p>
+      <dl class="fact-list fact-list--resume">${facts}</dl>
+      <a class="led-button led-button--solid resume-download" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}">
+        <span class="led-button__label">${escapeHTML(content.ui.resumeDownload)}</span>
+        ${icon("download", "led-button__icon")}
+      </a>
+      <p class="micro-label resume-side__meta">${escapeHTML(content.ui.resumeFormat)} · updated ${escapeHTML(content.resume.updated)}</p>
+      <button type="button" class="text-button" data-quick-view>${escapeHTML(content.ui.quickView)} ${icon("arrow-up-right")}</button>
+    </aside>`,
+  );
+}
+
+function buildContact(section: (typeof content.nav)[number], index: number, total: number): string {
+  const links = content.contact.links
+    .map(
+      (link) => `<li>
+        <a class="contact-link" href="${safeHref(link.href)}" ${externalAttrs(link.href)}>
+          <span class="contact-link__label">${escapeHTML(link.label)}</span>
+          <span class="contact-link__value">${escapeHTML(link.value)}</span>
+          ${icon(isExternal(link.href) ? "external" : "arrow-up-right", "contact-link__icon")}
+        </a>
+      </li>`,
+    )
+    .join("");
+  return makeScene(
+    section,
+    index,
+    total,
+    `<div class="contact-panel" data-reveal>
+      <h2 id="scene-title-contact" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+      <p class="lead">${escapeHTML(content.contact.intro)}</p>
+      <ul class="contact-list">${links}</ul>
+      <div class="contact-panel__actions">
+        <button type="button" class="copy-button" data-copy-email>
+          ${icon("copy")}
+          <span>${escapeHTML(content.ui.copyEmail)}</span>
+        </button>
+        <span class="micro-label">${escapeHTML(content.ui.awaiting)}</span>
+      </div>
+      <p class="aside-note contact-note">${escapeHTML(content.contact.finalNote)}</p>
+    </div>
+    <button class="egg-hotspot egg-hotspot--mark" type="button" data-egg="mark" aria-label="${escapeHTML(content.easterEggs.mark)}">
+      <span class="egg-hotspot__label">${escapeHTML(content.easterEggs.mark)}</span>
+    </button>`,
+  );
+}
+
+const sceneBuilders: Record<SectionId, (section: (typeof content.nav)[number], index: number, total: number) => string> = {
+  home: buildHome,
+  about: buildAbout,
+  skills: buildSkills,
+  projects: buildProjects,
+  education: buildEducation,
+  experience: buildExperience,
+  resume: buildResume,
+  contact: buildContact,
+};
+
+export interface SceneView {
+  id: SectionId;
+  element: HTMLElement;
+  navItem: (typeof content.nav)[number];
+}
+
+export interface BuiltUI {
+  header: HTMLElement;
+  scenes: SceneView[];
+  scrollTrack: HTMLElement;
+  mobileFlow: HTMLElement;
+  navRail: HTMLElement;
+  telemetry: HTMLElement;
+  footer: HTMLElement;
+  loader: HTMLElement;
+  quickView: HTMLDialogElement;
+  toast: HTMLElement;
+  accessibleContent: HTMLElement;
+  fallbackNote: HTMLElement;
+  loaderPercent: HTMLElement;
+  loaderStatus: HTMLElement;
+  loaderMeter: HTMLElement;
+  loaderCells: HTMLElement[];
+  loaderQuickView: HTMLElement | null;
+  navButtons: HTMLButtonElement[];
+  navNeedle: HTMLElement | null;
+  navValue: HTMLElement | null;
+  telemetryQuality: HTMLElement | null;
+  telemetryPoints: HTMLElement | null;
+  telemetryFps: HTMLElement | null;
+  headerQuickButton: HTMLElement | null;
+}
+
+function buildHeader(): string {
+  return `<a class="brand" href="#home" data-goto="home" aria-label="${escapeHTML(content.identity.name)} — ${escapeHTML(content.ui.backToTop)}">
+      ${ledMark()}
+      <span class="brand__copy">
+        <span class="brand__name">${escapeHTML(content.brand.name)}</span>
+        <span class="brand__sub">${escapeHTML(content.identity.name)} / ${escapeHTML(content.identity.role)}</span>
+      </span>
+    </a>
+    <div class="header-actions">
+      <span class="signal"><i aria-hidden="true"></i>${escapeHTML(content.ui.online)}</span>
+      <a class="header-resume" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}" aria-label="${escapeHTML(content.ui.resumeDownload)} (${escapeHTML(content.ui.resumeFormat)})">
+        <span class="header-resume__label">${escapeHTML(content.ui.resumeLabel)}</span>
+        ${icon("download", "header-resume__icon")}
+      </a>
+      <button type="button" class="quick-button" data-quick-view aria-haspopup="dialog" aria-controls="quickview" aria-label="${escapeHTML(content.ui.quickView)}">
+        <span>${escapeHTML(content.ui.quickView)}</span>
+        <span class="quick-button__icon">${icon("arrow-up-right")}</span>
+      </button>
+    </div>`;
+}
+
+function buildNav(): string {
+  const logPose = content.brand.logPose
+    .split(" ")
+    .map((word) => escapeHTML(word))
+    .join("<br>");
+  const buttons = content.nav
+    .map(
+      (section, index) => `<button type="button" class="nav-dot" data-goto-nav="${section.id}" aria-label="${escapeHTML(content.ui.goTo)} ${escapeHTML(section.eyebrow)} — ${escapeHTML(section.title)}" aria-current="false">
+        <span class="nav-dot__mark" aria-hidden="true"></span>
+        <span class="nav-dot__label" aria-hidden="true">
+          <span class="nav-dot__index">${String(index + 1).padStart(2, "0")}</span>
+          <span>${escapeHTML(section.nav)}</span>
+        </span>
+      </button>`,
+    )
+    .join("");
+  return `<div class="nav-dots" role="navigation" aria-label="${escapeHTML(content.ui.navLabel)}">${buttons}</div>
+    <div class="log-pose-group" aria-hidden="true">
+      <div class="log-pose">
+        <span class="log-pose__ticks"></span>
+        <span class="log-pose__cardinal log-pose__cardinal--n">N</span>
+        <span class="log-pose__cardinal log-pose__cardinal--e">E</span>
+        <span class="log-pose__cardinal log-pose__cardinal--s">S</span>
+        <span class="log-pose__cardinal log-pose__cardinal--w">W</span>
+        <span class="log-pose__needle" data-nav-needle></span>
+        <span class="log-pose__hub"></span>
+        <span class="log-pose__label">${logPose}</span>
+      </div>
+      <div class="nav-value">
+        <span data-nav-value>01</span>
+        <span class="nav-value__line"></span>
+        <span>${String(content.nav.length).padStart(2, "0")}</span>
+      </div>
+    </div>`;
+}
+
+function buildTelemetry(): string {
+  return `<span class="telemetry__dot" aria-hidden="true"></span>
+    <span class="telemetry__label">${escapeHTML(content.ui.qualityLabel)}</span>
+    <span class="telemetry__item" data-engine-quality>${escapeHTML(content.ui.statusReady)}</span>
+    <span class="telemetry__sep" aria-hidden="true">/</span>
+    <span class="telemetry__item" data-engine-points>—</span>
+    <span class="telemetry__sep" aria-hidden="true">/</span>
+    <span class="telemetry__item" data-engine-fps>— FPS</span>`;
+}
+
+function buildFooter(): string {
+  return `<div class="footer-left">
+      <span class="footer-credit">${escapeHTML(content.ui.footerCredit)}</span>
+    </div>
+    <div class="scroll-cue" data-scroll-cue>
+      <span class="scroll-cue__line" aria-hidden="true"></span>
+      <span>${escapeHTML(content.ui.scroll)}</span>
+    </div>
+    <div class="footer-right">
+      <button type="button" class="footer-link" data-quick-view>${escapeHTML(content.ui.quickViewShort)}</button>
+      <span class="footer-sep" aria-hidden="true">/</span>
+      <button type="button" class="footer-link" data-goto="home">${escapeHTML(content.ui.backToTop)} ${icon("arrow-down")}</button>
+    </div>`;
+}
+
+function buildLoader(): string {
+  const cells = Array.from({ length: 28 }, () => "<i></i>").join("");
+  return `<div class="loader__top">
+      <span class="loader__brand">${ledMark()}<span>${escapeHTML(content.brand.name)}</span></span>
+      <span class="loader__coords">${escapeHTML(content.ui.coordinates)}</span>
+    </div>
+    <div class="loader__edge loader__edge--left" aria-hidden="true">${escapeHTML(content.sceneLabels.loaderEdgeLeft)}</div>
+    <div class="loader__edge loader__edge--right" aria-hidden="true">${escapeHTML(content.sceneLabels.loaderEdgeRight)}</div>
+    <div class="loader__bottom">
+      <div class="loader__statusline">
+        <span class="loader__status" data-loader-status>${escapeHTML(content.loader.statuses[0])}</span>
+        <span class="loader__percent"><span data-loader-percent>00</span><span>%</span></span>
+      </div>
+      <div class="loader__meter" role="progressbar" aria-label="${escapeHTML(content.ui.loading)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-loader-meter>
+        <div class="loader__cells" aria-hidden="true">${cells}</div>
+      </div>
+      <div class="loader__foot">
+        <span class="micro-label">${escapeHTML(content.ui.loadingShort)}</span>
+        <button type="button" class="loader__quick" data-quick-view>${escapeHTML(content.ui.quickView)} ${icon("arrow-up-right")}</button>
+      </div>
+    </div>`;
+}
+
+function renderStaticSections(prefix: string): string {
+  const skills = content.skills.groups
+    .map(
+      (group) => `<div class="static-skill-group">
+        <h3>${escapeHTML(group.label)}</h3>
+        <ul class="inline-dot-list">${group.items.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}</ul>
+      </div>`,
+    )
+    .join("");
+  const projects = content.projects.entries
+    .map((project, index) => {
+      const tech = project.tech.map((item) => `<li>${escapeHTML(item)}</li>`).join("");
+      const links = project.links
+        .map(
+          (link) =>
+            `<a class="static-link" href="${safeHref(link.href)}" ${externalAttrs(link.href)}>${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right")}</a>`,
+        )
+        .join("");
+      return `<article class="static-project">
+        <div class="static-project__index">${String(index + 1).padStart(2, "0")}</div>
+        <div class="static-project__body">
+          <h3>${escapeHTML(project.title)}</h3>
+          <p class="static-project__short">${escapeHTML(project.short)}</p>
+          <p>${escapeHTML(project.description)}</p>
+          <ul class="tag-list">${tech}</ul>
+          <div class="static-project__links">${links}</div>
+        </div>
+      </article>`;
+    })
+    .join("");
+  const education = content.education.entries
+    .map(
+      (entry) => `<li class="static-entry">
+        <div class="static-entry__heading"><h3>${escapeHTML(entry.institution)}</h3><span>${escapeHTML(entry.period)}</span></div>
+        <p class="static-entry__role">${escapeHTML(entry.qualification)}</p>
+        <p>${escapeHTML(entry.detail)}</p>
+      </li>`,
+    )
+    .join("");
+  const experience = content.experience.entries
+    .map(
+      (entry) => `<li class="static-entry">
+        <div class="static-entry__heading"><h3>${escapeHTML(entry.role)}</h3><span>${escapeHTML(entry.period)}</span></div>
+        <p class="static-entry__role"><span class="type-badge type-badge--${entry.type}">${escapeHTML(content.ui.experienceTypes[entry.type])}</span>${escapeHTML(entry.place)}</p>
+        <p>${escapeHTML(entry.detail)}</p>
+      </li>`,
+    )
+    .join("");
+  const contact = content.contact.links
+    .map(
+      (link) => `<li><a class="static-link static-link--large" href="${safeHref(link.href)}" ${externalAttrs(link.href)}><span>${escapeHTML(link.label)}</span><span>${escapeHTML(link.value)}</span></a></li>`,
+    )
+    .join("");
+
+  return `<section class="static-section" id="${prefix}-about">
+      <header class="static-section__head">
+        <span class="static-section__index">02</span>
+        <div><p class="eyebrow">${escapeHTML(content.nav[1].eyebrow)}</p><h2>${escapeHTML(content.nav[1].title)}</h2></div>
+      </header>
+      <div class="static-section__content">
+        <p class="lead">${escapeHTML(content.identity.bioLead)}</p>
+        <p>${escapeHTML(content.identity.bioBody)}</p>
+        <p class="aside-note">${escapeHTML(content.identity.bioNote)}</p>
+        <dl class="fact-list">
+          <div><dt>${escapeHTML(content.resume.facts[1].label)}</dt><dd>${escapeHTML(content.identity.location)}</dd></div>
+          <div><dt>${escapeHTML(content.resume.facts[0].label)}</dt><dd>${escapeHTML(content.identity.role)}</dd></div>
+          <div><dt>${escapeHTML(content.ui.awaiting)}</dt><dd>${escapeHTML(content.identity.availability)}</dd></div>
+        </dl>
+      </div>
+    </section>
+    <section class="static-section" id="${prefix}-skills">
+      <header class="static-section__head">
+        <span class="static-section__index">03</span>
+        <div><p class="eyebrow">${escapeHTML(content.nav[2].eyebrow)}</p><h2>${escapeHTML(content.nav[2].title)}</h2></div>
+      </header>
+      <div class="static-section__content">
+        <p class="lead">${escapeHTML(content.skills.intro)}</p>
+        <div class="static-skill-grid">${skills}</div>
+      </div>
+    </section>
+    <section class="static-section" id="${prefix}-projects">
+      <header class="static-section__head">
+        <span class="static-section__index">04</span>
+        <div><p class="eyebrow">${escapeHTML(content.nav[3].eyebrow)}</p><h2>${escapeHTML(content.nav[3].title)}</h2></div>
+      </header>
+      <div class="static-section__content">
+        <p class="lead">${escapeHTML(content.projects.intro)}</p>
+        <div class="static-projects">${projects}</div>
+      </div>
+    </section>
+    <section class="static-section" id="${prefix}-education">
+      <header class="static-section__head">
+        <span class="static-section__index">05</span>
+        <div><p class="eyebrow">${escapeHTML(content.nav[4].eyebrow)}</p><h2>${escapeHTML(content.nav[4].title)}</h2></div>
+      </header>
+      <div class="static-section__content">
+        <p class="lead">${escapeHTML(content.education.intro)}</p>
+        <ol class="static-entry-list">${education}</ol>
+      </div>
+    </section>
+    <section class="static-section" id="${prefix}-experience">
+      <header class="static-section__head">
+        <span class="static-section__index">06</span>
+        <div><p class="eyebrow">${escapeHTML(content.nav[5].eyebrow)}</p><h2>${escapeHTML(content.nav[5].title)}</h2></div>
+      </header>
+      <div class="static-section__content">
+        <p class="lead">${escapeHTML(content.experience.intro)}</p>
+        <ol class="static-entry-list">${experience}</ol>
+      </div>
+    </section>
+    <section class="static-section" id="${prefix}-resume">
+      <header class="static-section__head">
+        <span class="static-section__index">07</span>
+        <div><p class="eyebrow">${escapeHTML(content.nav[6].eyebrow)}</p><h2>${escapeHTML(content.nav[6].title)}</h2></div>
+      </header>
+      <div class="static-section__content static-resume">
+        <p class="lead">${escapeHTML(content.resume.intro)}</p>
+        <dl class="fact-list">${content.resume.facts.map((fact) => `<div><dt>${escapeHTML(fact.label)}</dt><dd>${escapeHTML(fact.value)}</dd></div>`).join("")}</dl>
+        <a class="led-button led-button--solid" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}">
+          <span class="led-button__label">${escapeHTML(content.ui.resumeDownload)}</span>${icon("download", "led-button__icon")}
+        </a>
+        <p class="micro-label">${escapeHTML(content.ui.resumeFormat)} · updated ${escapeHTML(content.resume.updated)}</p>
+      </div>
+    </section>
+    <section class="static-section" id="${prefix}-contact">
+      <header class="static-section__head">
+        <span class="static-section__index">08</span>
+        <div><p class="eyebrow">${escapeHTML(content.nav[7].eyebrow)}</p><h2>${escapeHTML(content.nav[7].title)}</h2></div>
+      </header>
+      <div class="static-section__content">
+        <p class="lead">${escapeHTML(content.contact.intro)}</p>
+        <ul class="static-contact-list">${contact}</ul>
+        <p class="aside-note">${escapeHTML(content.contact.finalNote)}</p>
+      </div>
+    </section>`;
+}
+
+function buildQuickView(): string {
+  const toc = content.nav
+    .slice(1)
+    .map(
+      (section, index) =>
+        `<a href="#qv-${section.id}"><span>${String(index + 2).padStart(2, "0")}</span>${escapeHTML(section.nav)}</a>`,
+    )
+    .join("");
+  return `<div class="quickview__shell">
+    <header class="quickview__header">
+      <span class="quickview__brand">${ledMark()}<span>${escapeHTML(content.brand.name)} / ${escapeHTML(content.ui.quickViewTitle)}</span></span>
+      <button type="button" class="quickview__close" data-close-quick aria-label="${escapeHTML(content.ui.close)}">${icon("close")}<span>${escapeHTML(content.ui.close)}</span></button>
+    </header>
+    <div class="quickview__scroll" data-lenis-prevent>
+      <div class="quickview__hero">
+        <p class="eyebrow">${escapeHTML(content.nav[0].eyebrow)}</p>
+        <h2 id="quickview-title">${escapeHTML(content.identity.name)}</h2>
+        <p class="quickview__role">${escapeHTML(content.identity.role)}</p>
+        <p class="quickview__tagline">${escapeHTML(content.identity.tagline)}</p>
+        <p class="quickview__intro">${escapeHTML(content.ui.quickViewIntro)}</p>
+        <div class="quickview__actions">
+          <a class="led-button led-button--solid" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}">
+            <span class="led-button__label">${escapeHTML(content.ui.resumeDownload)}</span>${icon("download", "led-button__icon")}
+          </a>
+          <button type="button" class="text-button" data-close-quick>${escapeHTML(content.ui.quickViewExit)}${icon("arrow-left")}</button>
+        </div>
+        <div class="quickview__availability"><i aria-hidden="true"></i>${escapeHTML(content.identity.availability)}</div>
+      </div>
+      <nav class="quickview__toc" aria-label="${escapeHTML(content.ui.contents)}">
+        <span class="micro-label">${escapeHTML(content.ui.contents)}</span>
+        <div>${toc}</div>
+      </nav>
+      <div class="quickview__sections">${renderStaticSections("qv")}</div>
+      <footer class="quickview__footer">
+        <span>${escapeHTML(content.ui.footerCredit)}</span>
+        <span>${escapeHTML(content.ui.footerNote)}</span>
+      </footer>
+    </div>
+  </div>`;
+}
+
+function buildMobileFlow(): string {
+  return `<section class="flow-hero" id="flow-home">
+      <div class="flow-hero__copy">
+        <p class="eyebrow">${escapeHTML(content.nav[0].eyebrow)}</p>
+        <h1>${escapeHTML(content.identity.name)}</h1>
+        <p class="flow-hero__role">${escapeHTML(content.identity.role)}</p>
+        <p class="flow-hero__tagline">${escapeHTML(content.identity.tagline)}</p>
+        <p class="flow-hero__availability"><i aria-hidden="true"></i>${escapeHTML(content.identity.availability)}</p>
+        <div class="flow-hero__actions">
+          <button type="button" class="led-button led-button--solid" data-goto="projects"><span class="led-button__label">${escapeHTML(content.ui.viewWork)}</span>${icon("arrow-right", "led-button__icon")}</button>
+          <button type="button" class="text-button" data-quick-view>${escapeHTML(content.ui.quickView)}${icon("arrow-up-right")}</button>
+        </div>
+      </div>
+      <div class="flow-hero__scroll"><span class="scroll-cue__line" aria-hidden="true"></span>${escapeHTML(content.ui.scroll)}</div>
+    </section>
+    <div class="flow-document">
+      ${renderStaticSections("flow")}
+    </div>
+    <footer class="flow-footer">
+      <p>${escapeHTML(content.ui.footerCredit)}</p>
+      <p>${escapeHTML(content.ui.footerNote)}</p>
+      <div><button type="button" class="footer-link" data-quick-view>${escapeHTML(content.ui.quickView)}</button><button type="button" class="footer-link" data-goto="home">${escapeHTML(content.ui.backToTop)} ${icon("arrow-down")}</button></div>
+    </footer>`;
+}
+
+function buildAccessibleContent(): string {
+  const skills = content.skills.groups
+    .map(
+      (group) =>
+        `<li><strong>${escapeHTML(group.label)}:</strong> ${group.items.map(escapeHTML).join(", ")}</li>`,
+    )
+    .join("");
+  const projects = content.projects.entries
+    .map(
+      (project) =>
+        `<article><h3>${escapeHTML(project.title)}</h3><p>${escapeHTML(project.short)}</p><p>${escapeHTML(project.description)}</p><p>${escapeHTML(content.ui.techLabel)}: ${project.tech.map(escapeHTML).join(", ")}</p><ul>${project.links.map((link) => `<li>${escapeHTML(link.label)}: ${escapeHTML(link.href)}</li>`).join("")}</ul></article>`,
+    )
+    .join("");
+  const education = content.education.entries
+    .map(
+      (entry) =>
+        `<li><strong>${escapeHTML(entry.institution)}</strong>, ${escapeHTML(entry.qualification)} (${escapeHTML(entry.period)}). ${escapeHTML(entry.detail)}</li>`,
+    )
+    .join("");
+  const experience = content.experience.entries
+    .map(
+      (entry) =>
+        `<li><strong>${escapeHTML(content.ui.experienceTypes[entry.type])}: ${escapeHTML(entry.role)}</strong> at ${escapeHTML(entry.place)} (${escapeHTML(entry.period)}). ${escapeHTML(entry.detail)}</li>`,
+    )
+    .join("");
+  const contact = content.contact.links
+    .map((link) => `<li>${escapeHTML(link.label)}: ${escapeHTML(link.value)} (${escapeHTML(link.href)})</li>`)
+    .join("");
+  return `<article>
+    <h1>${escapeHTML(content.identity.name)} — ${escapeHTML(content.identity.role)}</h1>
+    <p>${escapeHTML(content.identity.tagline)}</p>
+    <p>${escapeHTML(content.identity.availability)}. ${escapeHTML(content.identity.location)}.</p>
+    <h2>${escapeHTML(content.nav[1].title)} — ${escapeHTML(content.nav[1].eyebrow)}</h2>
+    <p>${escapeHTML(content.identity.bioLead)}</p>
+    <p>${escapeHTML(content.identity.bioBody)}</p>
+    <p>${escapeHTML(content.identity.bioNote)}</p>
+    <h2>${escapeHTML(content.nav[2].title)} — ${escapeHTML(content.nav[2].eyebrow)}</h2>
+    <p>${escapeHTML(content.skills.intro)}</p>
+    <ul>${skills}</ul>
+    <h2>${escapeHTML(content.nav[3].title)} — ${escapeHTML(content.nav[3].eyebrow)}</h2>
+    <p>${escapeHTML(content.projects.intro)}</p>
+    ${projects}
+    <h2>${escapeHTML(content.nav[4].title)} — ${escapeHTML(content.nav[4].eyebrow)}</h2>
+    <p>${escapeHTML(content.education.intro)}</p>
+    <ul>${education}</ul>
+    <h2>${escapeHTML(content.nav[5].title)} — ${escapeHTML(content.nav[5].eyebrow)}</h2>
+    <p>${escapeHTML(content.experience.intro)}</p>
+    <ul>${experience}</ul>
+    <h2>${escapeHTML(content.nav[6].title)} — ${escapeHTML(content.nav[6].eyebrow)}</h2>
+    <p>${escapeHTML(content.resume.intro)}</p>
+    <p>${escapeHTML(content.ui.resumeLabel)}: ${escapeHTML(content.resume.downloadName)}</p>
+    <h2>${escapeHTML(content.nav[7].title)} — ${escapeHTML(content.nav[7].eyebrow)}</h2>
+    <p>${escapeHTML(content.contact.intro)}</p>
+    <ul>${contact}</ul>
+    <p>${escapeHTML(content.contact.finalNote)}</p>
+    <p>${escapeHTML(content.ui.footerCredit)}</p>
+  </article>`;
+}
+
+function setMeta(): void {
+  document.title = content.meta.title;
+  document.documentElement.style.colorScheme = "dark";
+  const metas: Array<[string, string]> = [
+    ['meta[name="description"]', content.meta.description],
+    ['meta[property="og:title"]', content.meta.title],
+    ['meta[property="og:description"]', content.meta.description],
+    ['meta[property="og:image"]', content.meta.ogImage],
+    ['meta[name="twitter:title"]', content.meta.title],
+    ['meta[name="twitter:description"]', content.meta.description],
+    ['meta[name="twitter:image"]', content.meta.ogImage],
+    ['meta[name="theme-color"]', content.meta.themeColor],
+  ];
+  for (const [selector, value] of metas) {
+    document.querySelector(selector)?.setAttribute("content", value);
+  }
+}
+
+export function buildUI(): BuiltUI {
+  setMeta();
+  const header = document.querySelector<HTMLElement>("#site-header");
+  const stageRoot = document.querySelector<HTMLElement>("#stage-root");
+  const scrollTrack = document.querySelector<HTMLElement>("#scroll-track");
+  const mobileFlow = document.querySelector<HTMLElement>("#mobile-flow");
+  const navRail = document.querySelector<HTMLElement>("#nav-rail");
+  const telemetry = document.querySelector<HTMLElement>("#telemetry");
+  const footer = document.querySelector<HTMLElement>("#site-footer");
+  const loader = document.querySelector<HTMLElement>("#loader");
+  const quickView = document.querySelector<HTMLDialogElement>("#quickview");
+  const toast = document.querySelector<HTMLElement>("#toast");
+  const accessibleContent = document.querySelector<HTMLElement>("#accessible-content");
+  const fallbackNote = document.querySelector<HTMLElement>("#fallback-note");
+
+  if (
+    !header ||
+    !stageRoot ||
+    !scrollTrack ||
+    !mobileFlow ||
+    !navRail ||
+    !telemetry ||
+    !footer ||
+    !loader ||
+    !quickView ||
+    !toast ||
+    !accessibleContent ||
+    !fallbackNote
+  ) {
+    throw new Error("The interface mount points are missing.");
+  }
+
+  stageRoot.setAttribute("aria-label", content.brand.storyLabel);
+  telemetry.setAttribute("aria-label", content.brand.engineLabel);
+  accessibleContent.setAttribute("aria-label", content.ui.accessibleContent);
+  header.innerHTML = buildHeader();
+  stageRoot.innerHTML = content.nav
+    .map((section, index) => sceneBuilders[section.id](section, index, content.nav.length))
+    .join("");
+  navRail.innerHTML = buildNav();
+  telemetry.innerHTML = buildTelemetry();
+  footer.innerHTML = buildFooter();
+  loader.innerHTML = buildLoader();
+  quickView.innerHTML = buildQuickView();
+  mobileFlow.innerHTML = buildMobileFlow();
+  accessibleContent.innerHTML = buildAccessibleContent();
+
+  const scenes: SceneView[] = content.nav.map((navItem) => {
+    const element = stageRoot.querySelector<HTMLElement>(`[data-scene="${navItem.id}"]`);
+    if (!element) throw new Error(`Missing scene: ${navItem.id}`);
+    return { id: navItem.id, element, navItem };
+  });
+
+  const navButtons = Array.from(navRail.querySelectorAll<HTMLButtonElement>(".nav-dot"));
+  const loaderCells = Array.from(loader.querySelectorAll<HTMLElement>(".loader__cells i"));
+  const loaderPercent = loader.querySelector<HTMLElement>("[data-loader-percent]");
+  const loaderStatus = loader.querySelector<HTMLElement>("[data-loader-status]");
+  const loaderMeter = loader.querySelector<HTMLElement>("[data-loader-meter]");
+  if (!loaderPercent || !loaderStatus || !loaderMeter) {
+    throw new Error("Loader controls are missing.");
+  }
+
+  return {
+    header,
+    scenes,
+    scrollTrack,
+    mobileFlow,
+    navRail,
+    telemetry,
+    footer,
+    loader,
+    quickView,
+    toast,
+    accessibleContent,
+    fallbackNote,
+    loaderPercent,
+    loaderStatus,
+    loaderMeter,
+    loaderCells,
+    loaderQuickView: loader.querySelector("[data-quick-view]"),
+    navButtons,
+    navNeedle: navRail.querySelector("[data-nav-needle]"),
+    navValue: navRail.querySelector("[data-nav-value]"),
+    telemetryQuality: telemetry.querySelector("[data-engine-quality]"),
+    telemetryPoints: telemetry.querySelector("[data-engine-points]"),
+    telemetryFps: telemetry.querySelector("[data-engine-fps]"),
+    headerQuickButton: header.querySelector("[data-quick-view]"),
+  };
+}
+
+export function setLoaderProgress(ui: BuiltUI, value: number, status?: string): void {
+  const clamped = Math.max(0, Math.min(100, Math.round(value)));
+  ui.loaderPercent.textContent = String(clamped).padStart(2, "0");
+  ui.loaderMeter.setAttribute("aria-valuenow", String(clamped));
+  const lit = Math.round((clamped / 100) * ui.loaderCells.length);
+  ui.loaderCells.forEach((cell, index) => {
+    cell.classList.toggle("is-lit", index < lit);
+  });
+  if (status) {
+    ui.loaderStatus.textContent = status;
+    ui.loaderMeter.setAttribute("aria-label", status);
+  }
+}
+
+export function setEngineReadout(
+  ui: BuiltUI,
+  stats: { quality: string; points: number; fps: number },
+): void {
+  if (ui.telemetryQuality) ui.telemetryQuality.textContent = stats.quality;
+  if (ui.telemetryPoints) ui.telemetryPoints.textContent = `${Math.round(stats.points / 1000)}K`;
+  if (ui.telemetryFps) {
+    ui.telemetryFps.textContent = stats.fps > 0 ? `${stats.fps} FPS` : "— FPS";
+  }
+}
+
+let toastTimer = 0;
+export function showToast(ui: BuiltUI, message: string, duration = 3200): void {
+  window.clearTimeout(toastTimer);
+  ui.toast.textContent = message;
+  ui.toast.classList.add("is-visible");
+  toastTimer = window.setTimeout(() => ui.toast.classList.remove("is-visible"), duration);
+}
+
+export function setProjectPanel(
+  scene: HTMLElement,
+  projectId: string | null,
+  projects: readonly Project[],
+): void {
+  const indexView = scene.querySelector<HTMLElement>("[data-project-index]");
+  const detailsWrap = scene.querySelector<HTMLElement>("[data-project-details]");
+  const panels = Array.from(scene.querySelectorAll<HTMLElement>("[data-project-panel]"));
+  if (!indexView || !detailsWrap) return;
+  const target = projectId ? projects.find((project) => project.id === projectId) : null;
+  indexView.hidden = Boolean(target);
+  detailsWrap.hidden = !target;
+  for (const panel of panels) {
+    panel.hidden = panel.dataset.projectPanel !== projectId;
+  }
+  scene.classList.toggle("has-project-open", Boolean(target));
+  if (target) {
+    const active = scene.querySelector<HTMLElement>(`[data-project-panel="${CSS.escape(projectId ?? "")}"]`);
+    if (active) {
+      const heading = active.querySelector<HTMLElement>("h3");
+      active.classList.remove("is-entering");
+      void active.offsetWidth;
+      active.classList.add("is-entering");
+      if (heading) heading.setAttribute("tabindex", "-1");
+    }
+  }
+}
+
+export function renderStaticSectionLinks(prefix: string): string {
+  return content.nav
+    .slice(1)
+    .map((section) => `<a href="#${prefix}-${section.id}">${escapeHTML(section.nav)}</a>`)
+    .join("");
+}

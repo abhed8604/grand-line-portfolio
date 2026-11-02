@@ -1,0 +1,230 @@
+# LED Grand Line
+
+A One Piece–inspired portfolio for **Abhed Srivastava**, focused on data engineering, analytics and applied AI. Ice-blue LED particles form a scroll-driven journey through eight chapters, with a readable mobile layout and a plain-text Quick View.
+
+> Fan tribute. One Piece © Eiichiro Oda / Shueisha.
+
+## Features
+
+- **Desktop voyage:** a fixed WebGL particle canvas morphs between Home, About, Skills, Projects, Education, Experience, Résumé and Contact.
+- **Interactive projects:** selectable islands and project rows open a readable detail panel while the particle field becomes a project frame.
+- **Navigation:** chapter links, section dots and a Log Pose dial track the journey. Chapters can also be opened directly through a URL.
+- **Mobile edition:** screens narrower than 880px, or devices with a coarse pointer, use a document layout with a particle hero. The hero simulation pauses when it leaves view.
+- **Quick View:** a native dialog presents the complete portfolio without requiring the particle engine.
+- **Adaptive rendering:** GPU benchmarking selects a quality tier, with runtime downgrades when performance drops.
+- **Motion and atmosphere:** an SVG world map, cursor ripples, particle repulsion, shape-specific idle motion and three hidden interactions.
+- **Readable fallback:** if WebGL initialization fails or its context is lost, the site switches to the document edition.
+
+## Stack
+
+| Technology            | Purpose                                                               |
+| --------------------- | --------------------------------------------------------------------- |
+| Vite 7 + TypeScript 5 | Development server, type checking and static production build         |
+| Three.js              | WebGL rendering and GPGPU particle simulation                         |
+| GSAP + ScrollTrigger  | Scroll-driven chapters, transitions and navigation                    |
+| Lenis                 | Smooth desktop scrolling                                              |
+| Fontsource            | Locally bundled Anybody, Doto and Hanken Grotesk fonts                |
+| Playwright            | Browser captures, visual diagnostics, PDF and social-image generation |
+
+The application uses vanilla TypeScript, with no UI framework or backend.
+
+## Getting started
+
+### Requirements
+
+- **Node.js 20.19+ or 22.12+**, as required by Vite 7; a current supported LTS release is recommended.
+- **npm** to install the dependencies recorded in `package-lock.json`.
+- A modern browser with WebGL2 support for the particle edition. JavaScript is required for the portfolio UI; without it, the page provides a résumé PDF link.
+
+From the project directory:
+
+```bash
+npm ci
+npm run dev
+```
+
+Open the URL printed by Vite, normally `http://localhost:5173`.
+
+### Production build
+
+```bash
+npm run build
+npm run preview
+```
+
+`build` runs TypeScript checking before generating `dist/`. The preview server normally runs at `http://localhost:4173`; it is for local verification, not production hosting.
+
+## Commands
+
+| Command               | Description                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `npm run dev`         | Start the Vite development server                                                                            |
+| `npm run check`       | Run TypeScript checking without emitting files                                                               |
+| `npm run build`       | Type-check and build into `dist/`                                                                            |
+| `npm run preview`     | Serve the production build locally                                                                           |
+| `npm run shots`       | Capture all desktop chapters at 1366 × 768 and mobile views at 390 × 844                                     |
+| `npm run quick-check` | Capture selected layouts, mobile and the no-WebGL fallback; log browser diagnostics                          |
+| `npm run qa`          | Capture desktop chapters at three sizes, plus loader, Quick View, reduced-motion, mobile and fallback states |
+| `npm run resume`      | Generate `public/resume.pdf` from the content module                                                         |
+| `npm run og`          | Capture the live hero as `public/og.png` at 1200 × 630                                                       |
+
+## Content and customization
+
+The primary content source is [`src/content.ts`](src/content.ts). It currently contains Abhed's identity, education, skills, projects, experience and contact links—not an unfilled portfolio template.
+
+| Content key                                     | Controls                                                  |
+| ----------------------------------------------- | --------------------------------------------------------- |
+| `meta`                                          | Runtime page metadata                                     |
+| `brand`, `identity`                             | Site branding, name, role, biography and availability     |
+| `nav`                                           | Chapter labels and particle titles                        |
+| `sceneLabels`, `sceneNotes`                     | Particle microtype and decorative margin notes            |
+| `ui`, `loader`                                  | Interface labels, loading messages and fallback copy      |
+| `skills`, `projects`, `education`, `experience` | Portfolio entries and readable layouts                    |
+| `resume`                                        | PDF URL, download filename, update date and summary facts |
+| `contact`                                       | Email, social links and closing note                      |
+| `easterEggs`                                    | Hidden-interaction labels and feedback                    |
+
+When adapting the site:
+
+1. Update the content and verify every claim and contact link. Project links currently point to a GitHub profile; replace them with individual repositories or demos as appropriate.
+2. Keep existing chapter IDs unless you also update the associated types, layouts and target-generation logic.
+3. Update the static title, description, Open Graph and Twitter tags in [`index.html`](index.html) alongside `content.meta`, so the initial HTML and share metadata match.
+4. Review decorative copy in [`src/ui/world-map.ts`](src/ui/world-map.ts) if changing the theme or coordinates; not every decorative label comes from the content module.
+5. Replace or regenerate the public assets, then rebuild.
+
+### Public assets
+
+- [`public/resume.pdf`](public/resume.pdf) — the downloadable résumé, copied into the build.
+- [`public/og.png`](public/og.png) — the social preview image.
+- [`public/favicon.svg`](public/favicon.svg) — the LED-style favicon.
+
+Asset generation requires Playwright's Chromium browser:
+
+```bash
+npx playwright install chromium
+npm run resume
+```
+
+On Linux, missing browser system libraries may require `npx playwright install --with-deps chromium` and administrator permissions.
+
+**The résumé generator still inserts “Placeholder” labels into its output.** Use an approved résumé PDF before publishing, or update the generator intentionally. Generating a PDF from the content does not validate its claims or guarantee that all content fits on one page.
+
+To regenerate the social image, first start a dev or preview server. The script defaults to port **4173**, so use `BASE_URL` when running the default dev server:
+
+```bash
+BASE_URL=http://127.0.0.1:5173 npm run og
+```
+
+Both asset commands overwrite their corresponding files in `public/`. Run `npm run build` afterward to include the new files in `dist/`.
+
+## Project structure
+
+```text
+index.html                  HTML shell, static metadata and no-JavaScript notice
+public/                     Résumé, social image and favicon
+scripts/                    Asset generators and browser diagnostics
+src/
+  content.ts                Portfolio content and content types
+  main.ts                   Boot sequence, mode selection, events and fallback
+  styles.css                Layout, typography, visual effects and responsive rules
+  engine/
+    constants.ts            Quality tiers and device/motion helpers
+    engine.ts               Renderer, GPU simulation and particle lifecycle
+    motion.ts               Motion configuration
+    quality.ts              GPU benchmark and initial tier selection
+    shaders.ts              Simulation and LED rendering shaders
+  scroll/story.ts           Desktop chapter and project transitions
+  targets/
+    shapes.ts               Original simplified silhouettes
+    target-factory.ts       SVG/text sampling and particle target generation
+  ui/
+    build.ts                DOM layouts and content rendering
+    cursor.ts               Pointer effects and ripple interaction
+    icons.ts                Interface icons
+    quickview.ts            Plain-edition dialog behavior
+    world-map.ts            Decorative SVG chart
+vite.config.ts              Relative asset base and build configuration
+```
+
+## Particle engine
+
+The visible particle field uses a single `THREE.Points` draw call, with additional GPU passes for simulation. SVG silhouettes and canvas-rendered text are sampled into target clouds on the CPU, then used by the GPU simulation to form and animate each scene.
+
+Engine and target-generation modules are dynamically imported. Chapter targets are cached during boot; the active target is regenerated after a debounced resize. The engine pauses when the tab is hidden or Quick View is open.
+
+### Quality tiers
+
+| Tier   |  Points | Active simulation rows | DPR cap |
+| ------ | ------: | ---------------------: | ------: |
+| high   | 150,016 |                    293 |       2 |
+| medium |  65,024 |                    127 |     1.5 |
+| low    |  16,384 |                     32 |       1 |
+
+Mobile/coarse-pointer devices default to low quality. Desktop selection uses a short GPU benchmark and device hints; detected software renderers also default to low. Automatic quality adjustment can downgrade the tier during use.
+
+For repeatable captures or troubleshooting, force a tier:
+
+```text
+/?tier=high
+/?tier=medium
+/?tier=low
+```
+
+A forced tier disables automatic downgrading. Open a chapter directly with `?stage=projects` or `#projects`, and combine parameters when needed:
+
+```text
+/?tier=high&stage=projects
+```
+
+Valid chapter IDs are `home`, `about`, `skills`, `projects`, `education`, `experience`, `resume` and `contact`.
+
+## Accessibility and motion
+
+- Portfolio copy is rendered as real DOM text, including a full text edition in `#accessible-content`.
+- Quick View uses a native `<dialog>` with keyboard focus handling, Escape-to-close and focus restoration.
+- Navigation, project controls and easter-egg buttons are keyboard reachable; a skip link opens the text edition.
+- `prefers-reduced-motion` reduces animation and disables smooth scrolling and cursor ripples.
+- Fine-pointer devices receive the custom cursor; touch devices do not receive a trailing cursor.
+- WebGL failure preserves the JavaScript-rendered portfolio in the readable fallback layout. This is distinct from the no-JavaScript notice, which only links to the résumé.
+
+### Easter eggs
+
+1. **Straw hat:** activate the hat hotspot on Home to scatter and reassemble the particles.
+2. **Following wind:** activate the ship hotspot on Projects to surge the route forward.
+3. **Final poneglyph:** activate the X hotspot on Contact to temporarily form “THE ONE PIECE IS REAL.”
+
+All three provide accessible labels and toast feedback.
+
+## Visual QA
+
+Install Chromium as described above, then keep a dev or preview server running in another terminal. The capture scripts do not start a server themselves.
+
+Using the default dev-server port:
+
+```bash
+BASE_URL=http://127.0.0.1:5173 OUT_DIR=./artifacts/shots npm run shots
+BASE_URL=http://127.0.0.1:5173 OUT_DIR=./artifacts/quick-check npm run quick-check
+BASE_URL=http://127.0.0.1:5173 OUT_DIR=./artifacts/qa npm run qa
+```
+
+Without overrides, all three use `http://127.0.0.1:4173`. `shots` and `quick-check` write to `/tmp/opencode/led-shots`; `qa` writes to `/tmp/opencode/led-qa2`.
+
+These scripts capture screenshots and log diagnostics; they are not a comprehensive assertion-based test suite. In particular, `qa-capture.mjs` still selects the old `project-one` ID for its project-detail capture. Update that ID to a current entry before relying on that screenshot to verify a project panel.
+
+Headless captures use SwiftShader, so their FPS readings do not represent hardware GPU performance. Desktop captures force high quality for consistency. Inspect the results manually and verify motion and performance on a real device before publishing.
+
+## Deployment
+
+Deploy the **contents of `dist/`** to a static host after running `npm run build`. No application server, API keys or environment variables are required for the portfolio itself; `BASE_URL` and `OUT_DIR` are local script options.
+
+Vite is configured with `base: "./"` for relative asset URLs. If hosting in a subdirectory, verify the résumé, favicon, generated bundles and share-image URLs at the deployed path. Use a public absolute social-image URL in the static metadata when required by your sharing platform.
+
+Before publishing, verify the contact and project links, résumé contents, social preview, mobile layout, Quick View and reduced-motion/WebGL fallback behavior.
+
+## Credits and licensing
+
+This project is a personal, non-commercial fan tribute. One Piece and its characters belong to Eiichiro Oda and Shueisha. Silhouette artwork is an original simplified interpretation; no official artwork, logos, audio or music are bundled.
+
+Footer credit: **Fan tribute. One Piece © Eiichiro Oda / Shueisha.**
+
+No standalone software license file is currently included in this repository. The fan attribution above is not a software license.
