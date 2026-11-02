@@ -165,10 +165,10 @@ function motionFor(id: string, width: number, height: number, mobile: boolean): 
     return {
       type: 5,
       center: world(
-        mobile ? width * 0.5 : width * 0.735,
+        mobile ? width * 0.5 : width * 0.65,
         mobile ? height * 0.48 : height * 0.6,
       ),
-      scale: mobile ? Math.min(width * 0.62, height * 0.43) : Math.min(width * 0.37, height * 0.45),
+      scale: mobile ? Math.min(width * 0.62, height * 0.43) : Math.min(width * 0.31, height * 0.42),
     };
   }
   if (id === "experience") {
@@ -531,7 +531,6 @@ function drawAbout(d: DrawContext): void {
   drawMapRoute(ctx, [w * 0.09, h * 0.28], [w * 0.15, h * 0.25], [w * 0.21, h * 0.25], [2, 18]);
   drawRing(ctx, w * 0.055, h * 0.28, 3.2, 1.8);
   drawRing(ctx, w * 0.085, h * 0.28, 1.7, 1.3);
-  drawMicroType(ctx, content.sceneLabels.aboutCoordinates, w * 0.55, h * 0.87, 11, "left");
 }
 
 function drawSkills(d: DrawContext): void {
@@ -662,13 +661,13 @@ function drawEducation(d: DrawContext): void {
   }
   const titleSize = clamp(w * 0.043, 44, 74);
   const [firstWord, ...restWords] = title.split(" ");
-  drawTracked(ctx, firstWord, w * 0.732, h * 0.2, titleSize, { maxWidth: w * 0.34 });
+  drawTracked(ctx, firstWord, w * 0.65, h * 0.2, titleSize, { maxWidth: w * 0.34 });
   if (restWords.length > 0) {
-    drawTracked(ctx, restWords.join(" "), w * 0.732, h * 0.2 + titleSize * 0.95, titleSize, { maxWidth: w * 0.34 });
+    drawTracked(ctx, restWords.join(" "), w * 0.65, h * 0.2 + titleSize * 0.95, titleSize, { maxWidth: w * 0.34 });
   }
-  drawArtwork(ctx, artworks.book, w * 0.735, h * 0.6, w * 0.37, h * 0.45);
-  drawOrbit(ctx, w * 0.735, h * 0.6, w * 0.23, h * 0.26, -0.12);
-  drawMicroType(ctx, content.sceneLabels.educationKicker, w * 0.735, h * 0.86, 11, "center");
+  drawArtwork(ctx, artworks.book, w * 0.65, h * 0.6, w * 0.31, h * 0.42);
+  drawOrbit(ctx, w * 0.65, h * 0.6, w * 0.2, h * 0.24, -0.12);
+  drawMicroType(ctx, content.sceneLabels.educationKicker, w * 0.65, h * 0.86, 11, "center");
 }
 
 function drawExperience(d: DrawContext): void {

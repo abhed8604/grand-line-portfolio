@@ -81,7 +81,7 @@ function buildHome(section: (typeof content.nav)[number], index: number, total: 
           ${icon("arrow-up-right")}
         </button>
       </div>
-      <p class="hero-copy__availability"><i aria-hidden="true"></i>${escapeHTML(content.identity.availability)}</p>
+      <p class="hero-copy__availability"><i aria-hidden="true"></i>${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
     </div>
     <h1 id="scene-title-home" class="sr-only">${escapeHTML(content.identity.name)} — ${escapeHTML(content.identity.role)}</h1>
     <button class="egg-hotspot egg-hotspot--hat" type="button" data-egg="hat" aria-label="${escapeHTML(content.easterEggs.hat)}">
@@ -102,7 +102,7 @@ function buildAbout(section: (typeof content.nav)[number], index: number, total:
       <dl class="fact-list">
         <div><dt>${escapeHTML(content.resume.facts[1].label)}</dt><dd>${escapeHTML(content.identity.location)}</dd></div>
         <div><dt>${escapeHTML(content.resume.facts[0].label)}</dt><dd>${escapeHTML(content.identity.role)}</dd></div>
-        <div><dt>${escapeHTML(content.ui.awaiting)}</dt><dd>${escapeHTML(content.identity.availability)}</dd></div>
+        <div><dt>${escapeHTML(content.ui.statusLabel)}</dt><dd>${escapeHTML(content.identity.status)}</dd></div>
       </dl>
       <h2 id="scene-title-about" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
     </div>
@@ -257,8 +257,7 @@ function buildEducation(section: (typeof content.nav)[number], index: number, to
       <h2 id="scene-title-education" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="body-copy education-panel__intro">${escapeHTML(content.education.intro)}</p>
       <ol class="timeline">${entries}</ol>
-    </div>
-    ${sceneNote(content.sceneNotes.education, "education")}`,
+    </div>`,
   );
 }
 
@@ -306,7 +305,7 @@ function buildResume(section: (typeof content.nav)[number], index: number, total
         <span class="led-button__label">${escapeHTML(content.ui.resumeDownload)}</span>
         ${icon("download", "led-button__icon")}
       </a>
-      <p class="micro-label resume-side__meta">${escapeHTML(content.ui.resumeFormat)} · updated ${escapeHTML(content.resume.updated)}</p>
+      <p class="micro-label resume-side__meta">${escapeHTML(content.ui.resumeFormat)}</p>
       <button type="button" class="text-button" data-quick-view>${escapeHTML(content.ui.quickView)} ${icon("arrow-up-right")}</button>
     </aside>`,
   );
@@ -331,13 +330,13 @@ function buildContact(section: (typeof content.nav)[number], index: number, tota
     `<div class="contact-panel" data-reveal>
       <h2 id="scene-title-contact" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="lead">${escapeHTML(content.contact.intro)}</p>
+      <p class="micro-label contact-status">${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
       <ul class="contact-list">${links}</ul>
       <div class="contact-panel__actions">
         <button type="button" class="copy-button" data-copy-email>
           ${icon("copy")}
           <span>${escapeHTML(content.ui.copyEmail)}</span>
         </button>
-        <span class="micro-label">${escapeHTML(content.ui.awaiting)}</span>
       </div>
       <p class="aside-note contact-note">${escapeHTML(content.contact.finalNote)}</p>
     </div>
@@ -413,10 +412,6 @@ function buildHeader(): string {
 }
 
 function buildNav(): string {
-  const logPose = content.brand.logPose
-    .split(" ")
-    .map((word) => escapeHTML(word))
-    .join("<br>");
   const buttons = content.nav
     .map(
       (section, index) => `<button type="button" class="nav-dot" data-goto-nav="${section.id}" aria-label="${escapeHTML(content.ui.goTo)} ${escapeHTML(section.eyebrow)} — ${escapeHTML(section.title)}" aria-current="false">
@@ -428,24 +423,7 @@ function buildNav(): string {
       </button>`,
     )
     .join("");
-  return `<div class="nav-dots" role="navigation" aria-label="${escapeHTML(content.ui.navLabel)}">${buttons}</div>
-    <div class="log-pose-group" aria-hidden="true">
-      <div class="log-pose">
-        <span class="log-pose__ticks"></span>
-        <span class="log-pose__cardinal log-pose__cardinal--n">N</span>
-        <span class="log-pose__cardinal log-pose__cardinal--e">E</span>
-        <span class="log-pose__cardinal log-pose__cardinal--s">S</span>
-        <span class="log-pose__cardinal log-pose__cardinal--w">W</span>
-        <span class="log-pose__needle" data-nav-needle></span>
-        <span class="log-pose__hub"></span>
-        <span class="log-pose__label">${logPose}</span>
-      </div>
-      <div class="nav-value">
-        <span data-nav-value>01</span>
-        <span class="nav-value__line"></span>
-        <span>${String(content.nav.length).padStart(2, "0")}</span>
-      </div>
-    </div>`;
+  return `<div class="nav-dots" role="navigation" aria-label="${escapeHTML(content.ui.navLabel)}">${buttons}</div>`;
 }
 
 function buildTelemetry(): string {
@@ -562,7 +540,7 @@ function renderStaticSections(prefix: string): string {
         <dl class="fact-list">
           <div><dt>${escapeHTML(content.resume.facts[1].label)}</dt><dd>${escapeHTML(content.identity.location)}</dd></div>
           <div><dt>${escapeHTML(content.resume.facts[0].label)}</dt><dd>${escapeHTML(content.identity.role)}</dd></div>
-          <div><dt>${escapeHTML(content.ui.awaiting)}</dt><dd>${escapeHTML(content.identity.availability)}</dd></div>
+          <div><dt>${escapeHTML(content.ui.statusLabel)}</dt><dd>${escapeHTML(content.identity.status)}</dd></div>
         </dl>
       </div>
     </section>
@@ -617,7 +595,7 @@ function renderStaticSections(prefix: string): string {
         <a class="led-button led-button--solid" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}">
           <span class="led-button__label">${escapeHTML(content.ui.resumeDownload)}</span>${icon("download", "led-button__icon")}
         </a>
-        <p class="micro-label">${escapeHTML(content.ui.resumeFormat)} · updated ${escapeHTML(content.resume.updated)}</p>
+        <p class="micro-label">${escapeHTML(content.ui.resumeFormat)}</p>
       </div>
     </section>
     <section class="static-section" id="${prefix}-contact">
@@ -627,6 +605,7 @@ function renderStaticSections(prefix: string): string {
       </header>
       <div class="static-section__content">
         <p class="lead">${escapeHTML(content.contact.intro)}</p>
+        <p class="micro-label contact-status">${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
         <ul class="static-contact-list">${contact}</ul>
         <div class="static-contact__actions">
           <button type="button" class="copy-button" data-copy-email>
@@ -665,7 +644,7 @@ function buildQuickView(): string {
           </a>
           <button type="button" class="text-button" data-close-quick>${escapeHTML(content.ui.quickViewExit)}${icon("arrow-left")}</button>
         </div>
-        <div class="quickview__availability"><i aria-hidden="true"></i>${escapeHTML(content.identity.availability)}</div>
+        <div class="quickview__availability"><i aria-hidden="true"></i>${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</div>
       </div>
       <nav class="quickview__toc" aria-label="${escapeHTML(content.ui.contents)}">
         <span class="micro-label">${escapeHTML(content.ui.contents)}</span>
@@ -687,7 +666,7 @@ function buildMobileFlow(): string {
         <h1>${escapeHTML(content.identity.name)}</h1>
         <p class="flow-hero__role">${escapeHTML(content.identity.role)}</p>
         <p class="flow-hero__tagline">${escapeHTML(content.identity.tagline)}</p>
-        <p class="flow-hero__availability"><i aria-hidden="true"></i>${escapeHTML(content.identity.availability)}</p>
+        <p class="flow-hero__availability"><i aria-hidden="true"></i>${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
         <div class="flow-hero__actions">
           <button type="button" class="led-button led-button--solid" data-goto="projects"><span class="led-button__label">${escapeHTML(content.ui.viewWork)}</span>${icon("arrow-right", "led-button__icon")}</button>
           <button type="button" class="text-button" data-quick-view>${escapeHTML(content.ui.quickView)}${icon("arrow-up-right")}</button>
@@ -736,7 +715,7 @@ function buildAccessibleContent(): string {
   return `<article>
     <h2>${escapeHTML(content.identity.name)} — ${escapeHTML(content.identity.role)}</h2>
     <p>${escapeHTML(content.identity.tagline)}</p>
-    <p>${escapeHTML(content.identity.availability)}. ${escapeHTML(content.identity.location)}.</p>
+    <p>${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}.</p>
     <h2>${escapeHTML(content.nav[1].title)} — ${escapeHTML(content.nav[1].eyebrow)}</h2>
     <p>${escapeHTML(content.identity.bioLead)}</p>
     <p>${escapeHTML(content.identity.bioBody)}</p>
@@ -816,6 +795,7 @@ export function buildUI(): BuiltUI {
 
   stageRoot.setAttribute("aria-label", content.brand.storyLabel);
   telemetry.setAttribute("aria-label", content.brand.engineLabel);
+  telemetry.hidden = new URLSearchParams(window.location.search).get("debug") !== "1";
   accessibleContent.setAttribute("aria-label", content.ui.accessibleContent);
   header.innerHTML = buildHeader();
   stageRoot.innerHTML = content.nav

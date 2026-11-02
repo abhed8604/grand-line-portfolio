@@ -1298,6 +1298,10 @@ blockquote {
   pointer-events: none;
 }
 
+.telemetry[hidden] {
+  display: none;
+}
+
 .telemetry__dot {
   width: 3px;
   height: 3px;
@@ -2391,12 +2395,16 @@ body[data-stage="contact"] .scroll-cue {
 }
 
 .resume-side__meta {
+  display: flex;
+  width: fit-content;
   margin-top: 12px;
   color: var(--ink-62);
   font-size: 11.5px;
 }
 
 .resume-side > .text-button {
+  display: flex;
+  width: fit-content;
   margin-top: 20px;
 }
 
@@ -2481,6 +2489,14 @@ body[data-stage="contact"] .scroll-cue {
   justify-content: space-between;
   gap: 16px;
   margin-top: 20px;
+}
+
+.contact-status {
+  max-width: 38ch;
+  margin-top: 14px;
+  color: var(--ink-62);
+  line-height: 1.55;
+  text-shadow: var(--copy-shadow);
 }
 
 .copy-button {
@@ -3827,7 +3843,10 @@ html.has-custom-cursor * {
   .site-header {
     height: var(--header-h);
     padding-top: env(safe-area-inset-top);
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.96), rgba(0, 0, 0, 0));
+    background: rgba(0, 0, 0, 0.9);
+    border-bottom: 1px solid var(--ink-12);
+    -webkit-backdrop-filter: blur(16px) saturate(0.8);
+    backdrop-filter: blur(16px) saturate(0.8);
   }
 
   .brand {

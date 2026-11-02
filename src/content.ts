@@ -89,7 +89,7 @@ export const content = {
     mark: "AS",
     role: "Data Engineering · Analytics · Applied AI",
     tagline: "Data systems and AI tools for clearer decisions.",
-    availability: "B.Tech 2027 · Ranchi, India",
+    status: "B.Tech 2027 · Ranchi, India · Open to full-time roles",
     location: "Ranchi, Jharkhand, India",
     bioLead: "B.Tech Mechanical Engineering at BIT Mesra, 2023–2027.",
     bioBody:
@@ -196,7 +196,7 @@ export const content = {
     fallbackBody:
       "WebGL is unavailable, so the particle edition is resting. The full portfolio is still here, in plain LED type.",
     reducedHint: "Motion reduced. The log is calmer for it.",
-    awaiting: "Awaiting contact",
+    statusLabel: "Status",
     coordinates: "Grand Line · 0° 00′",
     qualityLabel: "LED array",
     online: "Signal live",
@@ -351,7 +351,6 @@ export const content = {
       "One page covering education, selected projects, technical skills, an award and leadership experience.",
     url: "./resume.pdf",
     downloadName: "Abhed_Srivastava_Resume.pdf",
-    updated: "September 2026",
     facts: [
       { label: "Focus", value: "Data engineering · Analytics · Applied AI" },
       { label: "Based", value: "Ranchi, India" },
