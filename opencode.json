@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "watcher": { "ignore": ["node_modules/**", "dist/**", "build/**", "graphify-out/**"] },
+  "compaction": {
+    "auto": true,
+    "prune": true
+  },
+  "plugin": [
+    "@tarquinen/opencode-dcp@latest"
+  ]
+}

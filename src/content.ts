@@ -79,7 +79,6 @@ export const content = {
 
   brand: {
     name: "LED GRAND LINE",
-    logPose: "LOG POSE",
     storyLabel: "Portfolio story",
     engineLabel: "Particle engine status",
   },
@@ -118,12 +117,6 @@ export const content = {
       title: "THE CAPTAIN",
       body: "Wears the hat. Sets the course. Keeps the crew moving.",
       meta: "N 23° 20' / E 85° 19'",
-    },
-    education: {
-      label: "TRAINING LOG / 005",
-      title: "THE LIBRARY",
-      body: "Every island teaches something. Keep the log open.",
-      meta: "READ / PRACTICE / REPEAT",
     },
   },
 
@@ -187,7 +180,6 @@ export const content = {
     copied: "Copied",
     backToTop: "Back to top",
     navLabel: "Portfolio sections",
-    logPose: "Log pose",
     stageLabel: "Current section",
     quickViewTitle: "The log, plainly",
     quickViewIntro:

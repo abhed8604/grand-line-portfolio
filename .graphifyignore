@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Large data / generated binary files
+*.csv
+*.tsv
+*.parquet
+*.sqlite
+*.sqlite3
+*.db
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.gz
+*.7z
+*.rar
+*.pdf
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.mp3
+*.wav
+*.psd
+*.blend
+*.iso

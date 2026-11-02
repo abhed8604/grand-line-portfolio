@@ -7,10 +7,6 @@ type IconName =
   | "copy"
   | "download"
   | "external"
-  | "mail"
-  | "link"
-  | "code"
-  | "pin"
   | "compass";
 
 const paths: Record<IconName, string> = {
@@ -23,10 +19,6 @@ const paths: Record<IconName, string> = {
     '<rect x="8" y="8" width="11" height="11" rx="1"/><path d="M16 8V5H5v11h3"/>',
   download: '<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>',
   external: '<path d="M14 4h6v6M20 4 10 14"/><path d="M19 14v5H5V5h5"/>',
-  mail: '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="m4 7 8 6 8-6"/>',
-  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3A4 4 0 0 0 13 5.3l-1.7 1.7"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1.7-1.7"/>',
-  code: '<path d="m9 6-6 6 6 6M15 6l6 6-6 6"/>',
-  pin: '<path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/>',
   compass:
     '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>',
 };

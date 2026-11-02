@@ -8,9 +8,6 @@ import { setProjectPanel, type BuiltUI } from "../ui/build";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const NEEDLE_START = -122;
-const NEEDLE_SWEEP = 244;
-
 export interface StoryOptions {
   ui: BuiltUI;
   engine: LEDEngine;
@@ -25,6 +22,7 @@ export interface StoryController {
   goTo(id: SectionId, immediate?: boolean): void;
   selectProject(id: string): Promise<void>;
   closeProject(): void;
+  selectedProjectId(): string | null;
   currentSection(): SectionId;
   pause(): void;
   resume(): void;
@@ -66,14 +64,6 @@ export function initStory(options: StoryOptions): StoryController {
   let projectId: string | null = null;
   let projectRequest = 0;
 
-  const setNeedle = (progress: number): void => {
-    if (!ui.navNeedle) return;
-    ui.navNeedle.style.setProperty(
-      "--needle-angle",
-      `${(NEEDLE_START + clamp(progress, 0, 1) * NEEDLE_SWEEP).toFixed(2)}deg`,
-    );
-  };
-
   const setExternalHash = (id: SectionId): void => {
     if (document.body.classList.contains("quickview-open")) return;
     const next = `${window.location.pathname}${window.location.search}#${id}`;
@@ -110,14 +100,6 @@ export function initStory(options: StoryOptions): StoryController {
     document.body.dataset.stage = next.id;
     setExternalHash(next.id);
 
-    if (ui.navNeedle) {
-      const progress = total > 1 ? clamped / (total - 1) : 0;
-      const angle = NEEDLE_START + progress * NEEDLE_SWEEP;
-      ui.navNeedle.style.setProperty("--needle-angle", `${angle.toFixed(2)}deg`);
-    }
-    if (ui.navValue) {
-      ui.navValue.textContent = String(clamped + 1).padStart(2, "0");
-    }
     ui.navButtons.forEach((button, buttonIndex) => {
       if (buttonIndex === clamped) button.setAttribute("aria-current", "true");
       else button.setAttribute("aria-current", "false");
@@ -213,7 +195,6 @@ export function initStory(options: StoryOptions): StoryController {
   };
 
   const onProgress = (progress: number): void => {
-    setNeedle(progress);
     if (navigatingTo !== null) {
       const crossed = Math.min(total - 1, Math.floor(progress * total));
       if (crossed === navigatingTo) {
@@ -231,7 +212,6 @@ export function initStory(options: StoryOptions): StoryController {
     start: "top top",
     end: "bottom bottom",
     onUpdate: (self) => onProgress(self.progress),
-    onRefresh: (self) => setNeedle(self.progress),
   });
 
   const onLenisScroll = (): void => {
@@ -341,6 +321,9 @@ export function initStory(options: StoryOptions): StoryController {
     selectProject,
     closeProject() {
       closeProject();
+    },
+    selectedProjectId() {
+      return projectId;
     },
     currentSection() {
       return currentId;

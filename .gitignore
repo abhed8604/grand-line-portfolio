@@ -1,5 +1,44 @@
-node_modules
-dist
-.impeccable
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Test results and reports
+test-results/
+playwright-report/
+blob-report/
+coverage/
+
+# Local environment & tool caches
+.env
+.env.local
+.env.*.local
 *.local
+.impeccable/
+
+# Generated knowledge graph and agent metadata
+graphify-out/
+.opencode/
+
+# IDE and OS files
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.sw?
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Visual QA and capture artifacts
+artifacts/

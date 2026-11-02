@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
+    "test": "playwright test src/ui/build.test.ts",
     "shots": "node scripts/stages.mjs",
     "qa": "node scripts/qa-capture.mjs",
     "quick-check": "node scripts/quick-check.mjs",

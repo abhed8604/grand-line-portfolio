@@ -400,13 +400,21 @@ const onResize = (): void => {
   window.clearTimeout(resizeTimer);
   resizeTimer = window.setTimeout(async () => {
     if (!engine || !bootComplete || failed) return;
+    targetCache.clear();
     story?.refresh();
+    const activeProject = story?.selectedProjectId();
     const id = story?.currentSection() ?? "home";
     try {
       const factory = await import("./targets/target-factory");
-      const cloud = await factory.makeTargetCloud(id, reducedMotion);
-      stageClouds.set(id, cloud);
-      engine.morphTo(cloud);
+      if (activeProject) {
+        const cloud = await factory.makeProjectTarget(activeProject, reducedMotion);
+        targetCache.set(`project-${activeProject}`, cloud);
+        engine.morphTo(cloud);
+      } else {
+        const cloud = await factory.makeTargetCloud(id, reducedMotion);
+        stageClouds.set(id, cloud);
+        engine.morphTo(cloud);
+      }
     } catch {
       // The existing cloud remains valid if a resize redraw cannot complete.
     }

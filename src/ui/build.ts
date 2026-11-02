@@ -9,8 +9,10 @@ const escapeHTML = (value: string): string =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
-function safeHref(value: string): string {
+export function safeHref(value: string): string {
   if (
+    value.startsWith("./") ||
+    value.startsWith("../") ||
     value.startsWith("/") ||
     value.startsWith("#") ||
     value.startsWith("mailto:") ||
@@ -41,9 +43,8 @@ function sceneMeta(section: (typeof content.nav)[number], index: number, total: 
 
 function sceneNote(
   note: (typeof content.sceneNotes)[keyof typeof content.sceneNotes],
-  modifier: "about" | "education",
 ): string {
-  return `<aside class="scene-note scene-note--${modifier}" aria-hidden="true">
+  return `<aside class="scene-note scene-note--about" aria-hidden="true">
     <p class="scene-note__head">${icon("compass", "scene-note__icon")}${escapeHTML(note.label)}</p>
     <p class="scene-note__title">${escapeHTML(note.title)}</p>
     <p class="scene-note__body">${escapeHTML(note.body)}</p>
@@ -106,7 +107,7 @@ function buildAbout(section: (typeof content.nav)[number], index: number, total:
       </dl>
       <h2 id="scene-title-about" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
     </div>
-    ${sceneNote(content.sceneNotes.about, "about")}`,
+    ${sceneNote(content.sceneNotes.about)}`,
   );
 }
 
@@ -382,8 +383,6 @@ export interface BuiltUI {
   loaderCells: HTMLElement[];
   loaderQuickView: HTMLElement | null;
   navButtons: HTMLButtonElement[];
-  navNeedle: HTMLElement | null;
-  navValue: HTMLElement | null;
   telemetryQuality: HTMLElement | null;
   telemetryPoints: HTMLElement | null;
   telemetryFps: HTMLElement | null;
@@ -843,8 +842,6 @@ export function buildUI(): BuiltUI {
     loaderCells,
     loaderQuickView: loader.querySelector("[data-quick-view]"),
     navButtons,
-    navNeedle: navRail.querySelector("[data-nav-needle]"),
-    navValue: navRail.querySelector("[data-nav-value]"),
     telemetryQuality: telemetry.querySelector("[data-engine-quality]"),
     telemetryPoints: telemetry.querySelector("[data-engine-points]"),
     telemetryFps: telemetry.querySelector("[data-engine-fps]"),

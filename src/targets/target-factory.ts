@@ -859,7 +859,11 @@ export async function makeTargetCloud(id: TargetId, reducedMotion = false): Prom
   const width = Math.max(320, window.innerWidth);
   const height = Math.max(480, window.innerHeight);
   const mobile = width < 880;
-  const scale = width > 1800 ? 1.3 : width > 1000 ? 1.5 : 1.55;
+  let scale = width > 1800 ? 1.3 : width > 1000 ? 1.5 : 1.55;
+  const maxPixels = 16000000;
+  if (width * scale * height * scale > maxPixels) {
+    scale = Math.sqrt(maxPixels / (width * height));
+  }
   const { canvas, ctx } = makeCanvas(width, height, scale);
   const drawContext: DrawContext = { ctx, width, height, scale, mobile, reducedMotion };
   applyCtxTransform(ctx, drawContext);

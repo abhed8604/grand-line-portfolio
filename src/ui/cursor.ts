@@ -176,9 +176,7 @@ export function initCursor(options: CursorOptions): CursorController {
     }
     root.classList.add("is-pressing");
     spawnRipple(event.clientX, event.clientY, 1.8);
-    if (interactive) {
-      options.onPress?.(event.clientX, event.clientY);
-    }
+    options.onPress?.(event.clientX, event.clientY);
   };
 
   const onPointerUp = (): void => {

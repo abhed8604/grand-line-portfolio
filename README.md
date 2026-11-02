@@ -8,7 +8,7 @@ A One Piece–inspired portfolio for **Abhed Srivastava**, focused on data engin
 
 - **Desktop voyage:** a fixed WebGL particle canvas morphs between Home, About, Skills, Projects, Education, Experience, Résumé and Contact.
 - **Interactive projects:** selectable islands and project rows open a readable detail panel while the particle field becomes a project frame.
-- **Navigation:** chapter links, section dots and a Log Pose dial track the journey. Chapters can also be opened directly through a URL.
+- **Navigation:** chapter links and section dots track the journey. Chapters can also be opened directly through a URL.
 - **Mobile edition:** screens narrower than 880px, or devices with a coarse pointer, use a document layout with a particle hero. The hero simulation pauses when it leaves view.
 - **Quick View:** a native dialog presents the complete portfolio without requiring the particle engine.
 - **Adaptive rendering:** GPU benchmarking selects a quality tier, with runtime downgrades when performance drops.
@@ -24,7 +24,7 @@ A One Piece–inspired portfolio for **Abhed Srivastava**, focused on data engin
 | GSAP + ScrollTrigger  | Scroll-driven chapters, transitions and navigation                    |
 | Lenis                 | Smooth desktop scrolling                                              |
 | Fontsource            | Locally bundled Anybody, Doto and Hanken Grotesk fonts                |
-| Playwright            | Browser captures, visual diagnostics and social-image generation      |
+| Playwright            | Unit tests, browser captures, visual diagnostics and social image     |
 
 The application uses vanilla TypeScript, with no UI framework or backend.
 
@@ -60,6 +60,7 @@ npm run preview
 | --------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `npm run dev`         | Start the Vite development server                                                                            |
 | `npm run check`       | Run TypeScript checking without emitting files                                                               |
+| `npm run test`        | Run fast unit and link integrity tests                                                                       |
 | `npm run build`       | Type-check and build into `dist/`                                                                            |
 | `npm run preview`     | Serve the production build locally                                                                           |
 | `npm run shots`       | Capture all desktop chapters at 1366 × 768 and mobile views at 390 × 844                                     |
@@ -80,7 +81,7 @@ The primary content source is [`src/content.ts`](src/content.ts). It currently c
 | `sceneLabels`, `sceneNotes`                     | Particle microtype and decorative margin notes            |
 | `ui`, `loader`                                  | Interface labels, loading messages and fallback copy      |
 | `skills`, `projects`, `education`, `experience` | Portfolio entries and readable layouts                    |
-| `resume`                                        | PDF URL, download filename, update date and summary facts |
+| `resume`                                        | PDF URL, download filename and summary facts              |
 | `contact`                                       | Email, social links and closing note                      |
 | `easterEggs`                                    | Hidden-interaction labels and feedback                    |
 
@@ -136,6 +137,7 @@ src/
     target-factory.ts       SVG/text sampling and particle target generation
   ui/
     build.ts                DOM layouts and content rendering
+    build.test.ts           Unit tests for URL safety and navigation integrity
     cursor.ts               Pointer effects and ripple interaction
     icons.ts                Interface icons
     quickview.ts            Plain-edition dialog behavior
@@ -147,7 +149,7 @@ vite.config.ts              Relative asset base and build configuration
 
 The visible particle field uses a single `THREE.Points` draw call, with additional GPU passes for simulation. SVG silhouettes and canvas-rendered text are sampled into target clouds on the CPU, then used by the GPU simulation to form and animate each scene.
 
-Engine and target-generation modules are dynamically imported. Chapter targets are cached during boot; the active target is regenerated after a debounced resize. The engine pauses when the tab is hidden or Quick View is open.
+Engine and target-generation modules are dynamically imported. Chapter targets are cached during boot; the active chapter or project target is regenerated after a debounced resize with automatic cache invalidation. The engine pauses when the tab is hidden or Quick View is open.
 
 ### Quality tiers
 
@@ -192,7 +194,17 @@ Valid chapter IDs are `home`, `about`, `skills`, `projects`, `education`, `exper
 
 All three provide accessible labels and toast feedback.
 
-## Visual QA
+## Testing and visual QA
+
+### Unit tests
+
+Run fast link and navigation integrity tests without needing a running server or browser window:
+
+```bash
+npm test
+```
+
+### Visual and behavioural QA
 
 Install Chromium as described above, then keep a dev or preview server running in another terminal. The capture scripts do not start a server themselves.
 
