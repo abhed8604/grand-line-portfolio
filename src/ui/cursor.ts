@@ -17,7 +17,6 @@ const INTERACTIVE_SELECTOR =
   "a, button, summary, label, select, input, textarea, [role='button'], [data-cursor='hover']";
 
 const RIPPLE_COUNT = 18;
-const RIPPLE_SPEED = 260;
 
 interface Ripple {
   element: HTMLElement;
@@ -49,7 +48,6 @@ export function initCursor(options: CursorOptions): CursorController {
   root.innerHTML = '<span class="cursor__head"></span>';
   document.body.appendChild(root);
 
-  const head = root.querySelector<HTMLElement>(".cursor__head");
   const layer = document.createElement("div");
   layer.className = "cursor-ripples";
   layer.setAttribute("aria-hidden", "true");
@@ -77,7 +75,6 @@ export function initCursor(options: CursorOptions): CursorController {
   const reducedMotion = options.reducedMotion;
   let active = finePointer;
   let visible = false;
-  let pressing = false;
   let raf = 0;
   let pointerX = window.innerWidth / 2;
   let pointerY = window.innerHeight / 2;
@@ -177,7 +174,6 @@ export function initCursor(options: CursorOptions): CursorController {
       options.onRipple?.(event.clientX, event.clientY, 1.4);
       return;
     }
-    pressing = true;
     root.classList.add("is-pressing");
     spawnRipple(event.clientX, event.clientY, 1.8);
     if (interactive) {
@@ -186,7 +182,6 @@ export function initCursor(options: CursorOptions): CursorController {
   };
 
   const onPointerUp = (): void => {
-    pressing = false;
     root.classList.remove("is-pressing");
   };
 

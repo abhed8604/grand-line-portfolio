@@ -19,12 +19,12 @@ A One Piece–inspired portfolio for **Abhed Srivastava**, focused on data engin
 
 | Technology            | Purpose                                                               |
 | --------------------- | --------------------------------------------------------------------- |
-| Vite 7 + TypeScript 5 | Development server, type checking and static production build         |
+| Vite 8 + TypeScript 7 | Development server, type checking and static production build         |
 | Three.js              | WebGL rendering and GPGPU particle simulation                         |
 | GSAP + ScrollTrigger  | Scroll-driven chapters, transitions and navigation                    |
 | Lenis                 | Smooth desktop scrolling                                              |
 | Fontsource            | Locally bundled Anybody, Doto and Hanken Grotesk fonts                |
-| Playwright            | Browser captures, visual diagnostics, PDF and social-image generation |
+| Playwright            | Browser captures, visual diagnostics and social-image generation      |
 
 The application uses vanilla TypeScript, with no UI framework or backend.
 
@@ -32,7 +32,7 @@ The application uses vanilla TypeScript, with no UI framework or backend.
 
 ### Requirements
 
-- **Node.js 20.19+ or 22.12+**, as required by Vite 7; a current supported LTS release is recommended.
+- **Node.js 20.19+ or 22.12+**, as required by Vite 8; a current supported LTS release is recommended.
 - **npm** to install the dependencies recorded in `package-lock.json`.
 - A modern browser with WebGL2 support for the particle edition. JavaScript is required for the portfolio UI; without it, the page provides a résumé PDF link.
 
@@ -65,7 +65,7 @@ npm run preview
 | `npm run shots`       | Capture all desktop chapters at 1366 × 768 and mobile views at 390 × 844                                     |
 | `npm run quick-check` | Capture selected layouts, mobile and the no-WebGL fallback; log browser diagnostics                          |
 | `npm run qa`          | Capture desktop chapters at three sizes, plus loader, Quick View, reduced-motion, mobile and fallback states |
-| `npm run resume`      | Generate `public/resume.pdf` from the content module                                                         |
+| `npm run interaction-check` | Run assertion-based browser checks for navigation, project details, Quick View, copy and layout collisions |
 | `npm run og`          | Capture the live hero as `public/og.png` at 1200 × 630                                                       |
 
 ## Content and customization
@@ -102,12 +102,9 @@ Asset generation requires Playwright's Chromium browser:
 
 ```bash
 npx playwright install chromium
-npm run resume
 ```
 
 On Linux, missing browser system libraries may require `npx playwright install --with-deps chromium` and administrator permissions.
-
-**The résumé generator still inserts “Placeholder” labels into its output.** Use an approved résumé PDF before publishing, or update the generator intentionally. Generating a PDF from the content does not validate its claims or guarantee that all content fits on one page.
 
 To regenerate the social image, first start a dev or preview server. The script defaults to port **4173**, so use `BASE_URL` when running the default dev server:
 
@@ -115,7 +112,7 @@ To regenerate the social image, first start a dev or preview server. The script 
 BASE_URL=http://127.0.0.1:5173 npm run og
 ```
 
-Both asset commands overwrite their corresponding files in `public/`. Run `npm run build` afterward to include the new files in `dist/`.
+The OG command overwrites `public/og.png`. Run `npm run build` afterward to include the new file in `dist/`.
 
 ## Project structure
 
@@ -205,11 +202,10 @@ Using the default dev-server port:
 BASE_URL=http://127.0.0.1:5173 OUT_DIR=./artifacts/shots npm run shots
 BASE_URL=http://127.0.0.1:5173 OUT_DIR=./artifacts/quick-check npm run quick-check
 BASE_URL=http://127.0.0.1:5173 OUT_DIR=./artifacts/qa npm run qa
+BASE_URL=http://127.0.0.1:5173 npm run interaction-check
 ```
 
-Without overrides, all three use `http://127.0.0.1:4173`. `shots` and `quick-check` write to `/tmp/opencode/led-shots`; `qa` writes to `/tmp/opencode/led-qa2`.
-
-These scripts capture screenshots and log diagnostics; they are not a comprehensive assertion-based test suite. In particular, `qa-capture.mjs` still selects the old `project-one` ID for its project-detail capture. Update that ID to a current entry before relying on that screenshot to verify a project panel.
+Without overrides, the capture scripts use `http://127.0.0.1:4173`. `shots` and `quick-check` write to `/tmp/opencode/led-shots`; `qa` writes to `/tmp/opencode/led-qa2`. `interaction-check` prints assertions and exits non-zero on failure.
 
 Headless captures use SwiftShader, so their FPS readings do not represent hardware GPU performance. Desktop captures force high quality for consistency. Inspect the results manually and verify motion and performance on a real device before publishing.
 

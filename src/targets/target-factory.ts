@@ -158,7 +158,7 @@ function motionFor(id: string, width: number, height: number, mobile: boolean): 
         mobile ? width * 0.5 : width * 0.32,
         mobile ? height * 0.4 : height * 0.61,
       ),
-      scale: mobile ? Math.min(width * 0.82, height * 0.3) : Math.min(width * 0.35, height * 0.28),
+      scale: mobile ? Math.min(width * 0.82, height * 0.3) : Math.min(width * 0.4, height * 0.32),
     };
   }
   if (id === "education") {
@@ -178,7 +178,7 @@ function motionFor(id: string, width: number, height: number, mobile: boolean): 
         mobile ? width * 0.5 : width * 0.305,
         mobile ? height * 0.47 : height * 0.6,
       ),
-      scale: mobile ? Math.min(width * 0.86, height * 0.3) : Math.min(width * 0.43, height * 0.38),
+      scale: mobile ? Math.min(width * 0.86, height * 0.3) : Math.min(width * 0.45, height * 0.41),
     };
   }
   if (id === "resume") {
@@ -681,7 +681,7 @@ function drawExperience(d: DrawContext): void {
   }
   const titleSize = clamp(w * 0.048, 48, 82);
   drawTracked(ctx, title, w * 0.305, h * 0.235, titleSize, { maxWidth: w * 0.44 });
-  drawArtwork(ctx, artworks.chart, w * 0.305, h * 0.6, w * 0.43, h * 0.38);
+  drawArtwork(ctx, artworks.chart, w * 0.305, h * 0.6, w * 0.45, h * 0.41);
   drawOrbit(ctx, w * 0.305, h * 0.6, w * 0.25, h * 0.22, 0.18);
   drawMicroType(ctx, content.sceneLabels.experienceKicker, w * 0.305, h * 0.86, 11, "center");
 }
@@ -918,21 +918,4 @@ export async function makeProjectTarget(
   reducedMotion = false,
 ): Promise<TargetCloud> {
   return makeTargetCloud(`project-${projectId}` as TargetId, reducedMotion);
-}
-
-/** Development-only helper used by the art review page. */
-export async function paintTargetPreview(
-  id: TargetId,
-  width = 1440,
-  height = 900,
-): Promise<string> {
-  await waitForFonts();
-  await ensureReferences();
-  const scale = 1;
-  const mobile = width < 880;
-  const { canvas, ctx } = makeCanvas(width, height, scale);
-  applyCtxTransform(ctx, { ctx, width, height, scale, mobile, reducedMotion: false });
-  drawSparseDust(ctx, width, height, id.length * 997 + width, mobile);
-  drawComposition(id, { ctx, width, height, scale, mobile, reducedMotion: false });
-  return canvas.toDataURL("image/png");
 }

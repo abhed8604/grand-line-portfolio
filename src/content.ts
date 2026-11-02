@@ -236,15 +236,15 @@ export const content = {
     groups: [
       {
         label: "Build",
-        items: ["Python", "SQL", "C / C++", "JavaScript (ES6+)"],
+        items: ["Python", "SQL", "C / C++", "JavaScript / Bash"],
       },
       {
         label: "Motion",
-        items: ["Power BI", "Streamlit", "Matplotlib"],
+        items: ["Power BI", "Streamlit", "Matplotlib", "Pandas / NumPy"],
       },
       {
         label: "Systems",
-        items: ["SQL Server", "ETL / Data modeling", "Docker / Linux", "Git / GitHub"],
+        items: ["SQL Server / MySQL", "ETL / Data modeling", "Docker / Linux", "Git / GitHub"],
       },
       {
         label: "Craft",
@@ -253,6 +253,7 @@ export const content = {
           "LangChain / LangGraph",
           "RAG / FAISS",
           "LP / Monte Carlo",
+          "SHAP",
         ],
       },
     ] satisfies SkillGroup[],

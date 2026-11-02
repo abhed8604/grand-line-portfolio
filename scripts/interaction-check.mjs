@@ -50,7 +50,7 @@ results.push({
 });
 
 // Project row opens detail.
-await page.click('[data-project="project-two"]');
+await page.locator(".project-row").first().click();
 await page.waitForTimeout(2500);
 results.push({
   label: "project panel open",

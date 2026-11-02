@@ -15,11 +15,12 @@
   --deep: #1e6fd9;
   --ink-82: rgba(191, 230, 255, 0.96);
   --ink-62: rgba(191, 230, 255, 0.9);
-  --ink-40: rgba(191, 230, 255, 0.7);
-  --ink-24: rgba(191, 230, 255, 0.46);
-  --ink-12: rgba(191, 230, 255, 0.23);
-  --ink-06: rgba(191, 230, 255, 0.12);
+  --ink-40: rgba(191, 230, 255, 0.74);
+  --ink-24: rgba(191, 230, 255, 0.49);
+  --ink-12: rgba(191, 230, 255, 0.26);
+  --ink-06: rgba(191, 230, 255, 0.14);
   --line: rgba(92, 200, 255, 0.4);
+  --copy-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 18px rgba(0, 0, 0, 0.66);
   --font-display: "Anybody Variable", "Arial Narrow", sans-serif;
   --font-body: "Hanken Grotesk Variable", "Helvetica Neue", sans-serif;
   --font-led: "Doto Variable", "Courier New", monospace;
@@ -463,7 +464,7 @@ blockquote {
   gap: 0.6em;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0.13em;
   line-height: 1.4;
@@ -499,10 +500,11 @@ blockquote {
   max-width: 54ch;
   color: var(--ink-82);
   font-family: var(--font-led);
-  font-size: clamp(1rem, 1.06vw, 1.12rem);
-  font-weight: 400;
+  font-size: clamp(1.02rem, 1.18vw, 1.2rem);
+  font-weight: 500;
   letter-spacing: 0.012em;
-  line-height: 1.7;
+  line-height: 1.62;
+  text-shadow: var(--copy-shadow);
 }
 
 .aside-note {
@@ -511,9 +513,10 @@ blockquote {
   border-top: 1px solid var(--ink-12);
   color: var(--ink-82);
   font-family: var(--font-led);
-  font-size: 0.98rem;
+  font-size: 1.02rem;
   letter-spacing: 0.015em;
-  line-height: 1.66;
+  line-height: 1.62;
+  text-shadow: var(--copy-shadow);
 }
 
 .annotation {
@@ -522,7 +525,7 @@ blockquote {
   gap: 10px;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 0.86rem;
+  font-size: 0.9rem;
   letter-spacing: 0.09em;
   line-height: 1.6;
   text-transform: uppercase;
@@ -549,7 +552,7 @@ blockquote {
   background: var(--button-bg);
   color: var(--button-fill);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.13em;
   line-height: 1;
@@ -600,10 +603,6 @@ blockquote {
   border-color: var(--white);
 }
 
-.led-button--quiet {
-  border-color: var(--ink-24);
-}
-
 .text-button {
   display: inline-flex;
   align-items: center;
@@ -611,7 +610,7 @@ blockquote {
   min-height: 38px;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.11em;
   text-transform: uppercase;
   transition: color 180ms var(--ease-out);
@@ -655,7 +654,7 @@ blockquote {
 .fact-list dt {
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.1em;
   line-height: 1.6;
   text-transform: uppercase;
@@ -664,9 +663,10 @@ blockquote {
 .fact-list dd {
   color: var(--ink-82);
   font-family: var(--font-led);
-  font-size: 13px;
+  font-size: 13.5px;
   letter-spacing: 0.02em;
   line-height: 1.55;
+  text-shadow: var(--copy-shadow);
 }
 
 .dot-list {
@@ -679,9 +679,10 @@ blockquote {
   padding-left: 14px;
   color: var(--ink-82);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.02em;
-  line-height: 1.6;
+  line-height: 1.55;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
 }
 
 .dot-list li::before {
@@ -707,7 +708,7 @@ blockquote {
   border: 1px solid var(--ink-12);
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 9px;
+  font-size: 9.5px;
   letter-spacing: 0.08em;
   line-height: 1;
   text-transform: uppercase;
@@ -1066,7 +1067,7 @@ blockquote {
   gap: 7px;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 11.5px;
+  font-size: 12px;
   letter-spacing: 0.1em;
   line-height: 1;
   text-transform: uppercase;
@@ -1077,7 +1078,7 @@ blockquote {
 
 .nav-dot__index {
   color: var(--accent);
-  font-size: 10px;
+  font-size: 10.5px;
   opacity: 0.9;
 }
 
@@ -1121,23 +1122,24 @@ blockquote {
 .log-pose-group {
   position: absolute;
   right: 0;
-  bottom: 74px;
+  bottom: 58px;
   display: grid;
   justify-items: center;
-  gap: 12px;
+  gap: 8px;
   pointer-events: none;
 }
 
 .log-pose {
   position: relative;
-  width: 132px;
-  height: 132px;
-  border: 1px solid var(--ink-24);
+  width: 156px;
+  height: 156px;
+  border: 1px solid var(--ink-40);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(30, 111, 217, 0.34), rgba(30, 111, 217, 0.08) 48%, transparent 68%);
+  background: radial-gradient(circle, rgba(30, 111, 217, 0.4), rgba(30, 111, 217, 0.09) 48%, transparent 68%);
   box-shadow:
-    inset 0 0 34px rgba(92, 200, 255, 0.12),
-    0 0 30px rgba(0, 0, 0, 0.72);
+    inset 0 0 44px rgba(92, 200, 255, 0.16),
+    0 0 16px rgba(92, 200, 255, 0.1),
+    0 0 34px rgba(0, 0, 0, 0.74);
 }
 
 .log-pose::before,
@@ -1148,12 +1150,12 @@ blockquote {
 }
 
 .log-pose::before {
-  inset: 10px;
+  inset: 12px;
   border: 1px solid var(--ink-12);
 }
 
 .log-pose::after {
-  inset: 21px;
+  inset: 25px;
   border: 1px dashed var(--ink-12);
   opacity: 0.7;
 }
@@ -1174,45 +1176,45 @@ blockquote {
   position: absolute;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.08em;
   line-height: 1;
 }
 
 .log-pose__cardinal--n {
-  top: 26px;
+  top: 31px;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .log-pose__cardinal--e {
   top: 50%;
-  right: 27px;
+  right: 32px;
   transform: translateY(-50%);
 }
 
 .log-pose__cardinal--s {
-  bottom: 26px;
+  bottom: 31px;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .log-pose__cardinal--w {
   top: 50%;
-  left: 27px;
+  left: 32px;
   transform: translateY(-50%);
 }
 
 .log-pose__needle {
   position: absolute;
   top: 50%;
-  left: calc(50% - 1px);
-  width: 2px;
-  height: 44px;
+  left: calc(50% - 1.25px);
+  width: 2.5px;
+  height: 52px;
   transform-origin: 50% 100%;
   transform: translateY(-100%) rotate(var(--needle-angle, -122deg));
   background: linear-gradient(to top, transparent, var(--accent) 22%, var(--white));
-  box-shadow: 0 0 12px rgba(92, 200, 255, 0.9);
+  box-shadow: 0 0 14px rgba(92, 200, 255, 0.95);
   transition: transform 480ms var(--ease-out);
   will-change: transform;
 }
@@ -1220,36 +1222,36 @@ blockquote {
 .log-pose__needle::before {
   content: "";
   position: absolute;
-  top: -5px;
-  left: -4px;
-  width: 10px;
-  height: 10px;
+  top: -6px;
+  left: -4.75px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--white);
-  box-shadow: 0 0 13px var(--accent);
+  box-shadow: 0 0 14px var(--accent);
 }
 
 .log-pose__hub {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border: 1px solid var(--accent);
   border-radius: 50%;
   background: var(--black);
-  box-shadow: 0 0 0 5px rgba(92, 200, 255, 0.08);
+  box-shadow: 0 0 0 6px rgba(92, 200, 255, 0.09);
   transform: translate(-50%, -50%);
 }
 
 .log-pose__label {
   position: absolute;
-  top: -21px;
+  top: -24px;
   left: 50%;
-  padding: 0 4px;
+  padding: 0 5px;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 10px;
+  font-size: 10.5px;
   letter-spacing: 0.16em;
   line-height: 1.15;
   text-align: center;
@@ -1263,13 +1265,13 @@ blockquote {
   gap: 6px;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.1em;
 }
 
 .nav-value [data-nav-value] {
   color: var(--accent);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .nav-value__line {
@@ -1289,7 +1291,7 @@ blockquote {
   gap: 7px;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 10px;
+  font-size: 10.5px;
   letter-spacing: 0.1em;
   line-height: 1;
   text-transform: uppercase;
@@ -1325,7 +1327,7 @@ blockquote {
   padding: 0 var(--gutter);
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.08em;
   line-height: 1.4;
   pointer-events: none;
@@ -1488,10 +1490,6 @@ body[data-stage="contact"] .scroll-cue {
   letter-spacing: 0.12em;
 }
 
-.scene-meta__theme {
-  color: var(--ink-62);
-}
-
 .scene-meta__total {
   padding-left: 12px;
   border-left: 1px solid var(--ink-12);
@@ -1510,7 +1508,7 @@ body[data-stage="contact"] .scroll-cue {
 .hero-copy__role {
   color: var(--accent);
   font-family: var(--font-led);
-  font-size: 11.5px;
+  font-size: 12px;
   letter-spacing: 0.15em;
   line-height: 1.45;
   text-transform: uppercase;
@@ -1544,7 +1542,7 @@ body[data-stage="contact"] .scroll-cue {
   margin-top: 26px;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.09em;
   line-height: 1.5;
   text-transform: uppercase;
@@ -1694,7 +1692,7 @@ body[data-stage="contact"] .scroll-cue {
   gap: 8px;
   color: var(--accent);
   font-family: var(--font-led);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.11em;
   line-height: 1.25;
   text-transform: uppercase;
@@ -1720,9 +1718,10 @@ body[data-stage="contact"] .scroll-cue {
   margin-top: 6px;
   color: var(--ink-82);
   font-family: var(--font-led);
-  font-size: 11.5px;
+  font-size: 12px;
   letter-spacing: 0.01em;
-  line-height: 1.62;
+  line-height: 1.58;
+  text-shadow: var(--copy-shadow);
 }
 
 .scene-note__meta {
@@ -1731,7 +1730,7 @@ body[data-stage="contact"] .scroll-cue {
   border-top: 1px solid var(--ink-12);
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 10px;
+  font-size: 10.5px;
   letter-spacing: 0.11em;
   line-height: 1.3;
   text-transform: uppercase;
@@ -1787,7 +1786,7 @@ body[data-stage="contact"] .scroll-cue {
 }
 
 .skill-cluster:nth-of-type(4) {
-  top: 70%;
+  top: 62.5%;
   left: 1%;
 }
 
@@ -1801,7 +1800,7 @@ body[data-stage="contact"] .scroll-cue {
 .skill-cluster__number {
   color: var(--accent);
   font-family: var(--font-led);
-  font-size: 9.5px;
+  font-size: 10px;
   letter-spacing: 0.04em;
 }
 
@@ -1816,7 +1815,7 @@ body[data-stage="contact"] .scroll-cue {
 .skill-cluster h3 {
   color: var(--white);
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 13.5px;
   font-stretch: 115%;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1965,18 +1964,19 @@ body[data-stage="contact"] .scroll-cue {
 .panel-head__count {
   color: var(--ink-40);
   font-family: var(--font-led);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.1em;
 }
 
 .project-index__intro {
-  max-width: 31ch;
+  max-width: 36ch;
   margin-top: 20px;
   color: var(--ink-82);
   font-family: var(--font-led);
-  font-size: 1rem;
+  font-size: 1.03rem;
   letter-spacing: 0.015em;
-  line-height: 1.72;
+  line-height: 1.66;
+  text-shadow: var(--copy-shadow);
 }
 
 .project-list {
@@ -2003,7 +2003,7 @@ body[data-stage="contact"] .scroll-cue {
   padding-top: 3px;
   color: var(--accent);
   font-family: var(--font-led);
-  font-size: 9.5px;
+  font-size: 10px;
   letter-spacing: 0.04em;
 }
 
@@ -2024,11 +2024,12 @@ body[data-stage="contact"] .scroll-cue {
 }
 
 .project-row__short {
-  color: var(--ink-62);
+  color: var(--ink-82);
   font-family: var(--font-led);
-  font-size: 12px;
+  font-size: 12.5px;
   letter-spacing: 0.01em;
-  line-height: 1.55;
+  line-height: 1.52;
+  text-shadow: var(--copy-shadow);
 }
 
 .project-row__arrow {
@@ -2085,7 +2086,7 @@ body[data-stage="contact"] .scroll-cue {
   margin-bottom: 26px;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 10px;
+  font-size: 10.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   transition: color 180ms var(--ease-out);
@@ -2104,7 +2105,7 @@ body[data-stage="contact"] .scroll-cue {
 .project-detail__index {
   color: var(--accent);
   font-family: var(--font-led);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -2124,16 +2125,18 @@ body[data-stage="contact"] .scroll-cue {
   margin-top: 13px;
   color: var(--ice);
   font-family: var(--font-led);
-  font-size: 1rem;
-  line-height: 1.65;
+  font-size: 1.03rem;
+  line-height: 1.62;
+  text-shadow: var(--copy-shadow);
 }
 
 .project-detail__body {
   margin-top: 18px;
   color: var(--ink-82);
   font-family: var(--font-led);
-  font-size: 0.98rem;
-  line-height: 1.7;
+  font-size: 1.01rem;
+  line-height: 1.66;
+  text-shadow: var(--copy-shadow);
 }
 
 .project-detail__stack,
@@ -2159,7 +2162,7 @@ body[data-stage="contact"] .scroll-cue {
   gap: 6px;
   color: var(--ice);
   font-family: var(--font-led);
-  font-size: 10px;
+  font-size: 10.5px;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   transition: color 180ms var(--ease-out);
@@ -2233,7 +2236,7 @@ body[data-stage="contact"] .scroll-cue {
 .timeline-entry__index {
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   line-height: 1.6;
 }
@@ -2260,7 +2263,7 @@ body[data-stage="contact"] .scroll-cue {
   flex: 0 0 auto;
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 10.5px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   line-height: 1.4;
 }
@@ -2269,15 +2272,15 @@ body[data-stage="contact"] .scroll-cue {
   margin-top: 5px;
   color: var(--accent);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.02em;
   line-height: 1.5;
 }
 
 .timeline-entry .body-copy {
   margin-top: 8px;
-  font-size: 0.94rem;
-  line-height: 1.64;
+  font-size: 1rem;
+  line-height: 1.56;
 }
 
 /* Experience */
@@ -2348,7 +2351,7 @@ body[data-stage="contact"] .scroll-cue {
   margin-top: 4px;
   color: var(--accent);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.02em;
   line-height: 1.5;
 }
@@ -2356,8 +2359,8 @@ body[data-stage="contact"] .scroll-cue {
 .experience-entry .body-copy {
   margin-top: 6px;
   color: var(--ink-82);
-  font-size: 0.94rem;
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.54;
 }
 
 .experience-scroll-cue {
@@ -2390,7 +2393,7 @@ body[data-stage="contact"] .scroll-cue {
 .resume-side__meta {
   margin-top: 12px;
   color: var(--ink-62);
-  font-size: 11px;
+  font-size: 11.5px;
 }
 
 .resume-side > .text-button {
@@ -2431,7 +2434,7 @@ body[data-stage="contact"] .scroll-cue {
 .contact-link__label {
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 11px;
+  font-size: 11.5px;
   letter-spacing: 0.12em;
   line-height: 1.5;
   text-transform: uppercase;
@@ -2489,7 +2492,7 @@ body[data-stage="contact"] .scroll-cue {
   border: 1px solid var(--ink-12);
   color: var(--ink-62);
   font-family: var(--font-led);
-  font-size: 9.5px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   transition:
@@ -3151,6 +3154,10 @@ body[data-stage="contact"] .scroll-cue {
   border-bottom: 1px solid var(--ink-12);
 }
 
+.static-contact__actions {
+  margin-top: 18px;
+}
+
 .static-link--large {
   display: flex !important;
   justify-content: space-between;
@@ -3340,6 +3347,10 @@ body[data-stage="contact"] .scroll-cue {
 
 .flow-document .static-contact-list {
   margin-top: 20px;
+}
+
+.flow-document .static-contact__actions {
+  margin-top: 16px;
 }
 
 .flow-document .static-link--large {
@@ -3682,7 +3693,7 @@ html.has-custom-cursor * {
 @media (max-width: 1080px) {
   :root {
     --gutter: 28px;
-    --right-safe: 180px;
+    --right-safe: 208px;
   }
 
   .nav-rail {
@@ -3698,12 +3709,50 @@ html.has-custom-cursor * {
   }
 
   .log-pose {
-    width: 96px;
-    height: 96px;
+    width: 112px;
+    height: 112px;
+  }
+
+  .log-pose::before {
+    inset: 9px;
+  }
+
+  .log-pose::after {
+    inset: 18px;
   }
 
   .log-pose__needle {
-    height: 31px;
+    height: 38px;
+  }
+
+  .log-pose__cardinal {
+    font-size: 10px;
+  }
+
+  .log-pose__cardinal--n {
+    top: 23px;
+  }
+
+  .log-pose__cardinal--e {
+    right: 24px;
+  }
+
+  .log-pose__cardinal--s {
+    bottom: 23px;
+  }
+
+  .log-pose__cardinal--w {
+    left: 24px;
+  }
+
+  .log-pose__hub {
+    width: 12px;
+    height: 12px;
+  }
+
+  .log-pose__label {
+    top: -22px;
+    font-size: 10px;
   }
 
   .header-actions {
@@ -3715,7 +3764,8 @@ html.has-custom-cursor * {
   }
 
   .brand__sub {
-    max-width: 32ch;
+    max-width: none;
+    white-space: nowrap;
   }
 
   .hero-copy {
@@ -3885,7 +3935,8 @@ html.has-custom-cursor * {
   }
 
   .quickview__hero h2 {
-    font-size: clamp(3.2rem, 17vw, 5.5rem);
+    max-width: 100%;
+    font-size: clamp(2.6rem, 13vw, 5rem);
   }
 
   .quickview__toc {
@@ -4072,6 +4123,27 @@ html.has-custom-cursor * {
   .project-dock {
     max-height: calc(100vh - 230px);
   }
+
+  .skill-cluster:nth-of-type(1) {
+    top: 26%;
+  }
+
+  .skill-cluster:nth-of-type(2) {
+    top: 2%;
+  }
+
+  .skill-cluster:nth-of-type(4) {
+    top: 62.5%;
+  }
+
+  .resume-side {
+    top: 17%;
+    max-height: calc(83vh - 66px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--deep) transparent;
+  }
 }
 
 @media (max-height: 700px) and (min-width: 880px) {
@@ -4120,6 +4192,7 @@ html.has-custom-cursor * {
 
   .resume-side {
     top: 21%;
+    max-height: calc(100vh - 212px);
   }
 
   .contact-panel {
@@ -4139,12 +4212,45 @@ html.has-custom-cursor * {
   }
 
   .log-pose {
-    width: 92px;
-    height: 92px;
+    width: 104px;
+    height: 104px;
   }
 
   .log-pose__needle {
-    height: 29px;
+    height: 35px;
+  }
+
+  .log-pose__cardinal {
+    font-size: 10px;
+  }
+
+  .log-pose__cardinal--n {
+    top: 21px;
+  }
+
+  .log-pose__cardinal--e {
+    right: 22px;
+  }
+
+  .log-pose__cardinal--s {
+    bottom: 21px;
+  }
+
+  .log-pose__cardinal--w {
+    left: 22px;
+  }
+
+  .log-pose::before {
+    inset: 9px;
+  }
+
+  .log-pose::after {
+    inset: 18px;
+  }
+
+  .log-pose__label {
+    top: -21px;
+    font-size: 10px;
   }
 }
 

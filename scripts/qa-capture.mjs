@@ -61,7 +61,8 @@ for (const [width, height] of [
     await page.evaluate(() => window.__led?.story?.goTo("projects", true));
     await settle(page);
     await page.evaluate(async () => {
-      await window.__led?.story?.selectProject("project-one");
+      const project = document.querySelector(".project-row")?.dataset.project;
+      if (project) await window.__led?.story?.selectProject(project);
     });
     await settle(page);
     await page.screenshot({ path: `${outDir}/desktop-project-detail-1440x900.png` });

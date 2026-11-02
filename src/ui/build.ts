@@ -30,33 +30,6 @@ function externalAttrs(href: string): string {
   return isExternal(href) ? ' target="_blank" rel="noreferrer noopener"' : "";
 }
 
-function arrowLink(label: string, href: string, className = "text-link"): string {
-  return `<a class="${className}" href="${safeHref(href)}" ${externalAttrs(href)}>
-    <span>${escapeHTML(label)}</span>${icon(isExternal(href) ? "external" : "arrow-right")}
-  </a>`;
-}
-
-function ledButton(
-  label: string,
-  opts: {
-    href?: string;
-    action?: string;
-    variant?: "solid" | "quiet";
-    iconName?: "arrow-right" | "arrow-up-right" | "download" | "compass" | "arrow-down";
-    extra?: string;
-    download?: string;
-  } = {},
-): string {
-  const variant = opts.variant ?? "solid";
-  const attrs = opts.href
-    ? `href="${safeHref(opts.href)}" ${externalAttrs(opts.href)} ${opts.download ? `download="${escapeHTML(opts.download)}"` : ""}`
-    : `type="button" ${opts.action ?? ""}`;
-  return `<a class="led-button led-button--${variant}" ${attrs} ${opts.extra ?? ""}>
-    <span class="led-button__label">${escapeHTML(label)}</span>
-    ${opts.iconName ? icon(opts.iconName, "led-button__icon") : ""}
-  </a>`;
-}
-
 function sceneMeta(section: (typeof content.nav)[number], index: number, total: number): string {
   return `<div class="scene-meta">
     <span class="scene-meta__index">${String(index + 1).padStart(2, "0")}</span>
@@ -655,6 +628,12 @@ function renderStaticSections(prefix: string): string {
       <div class="static-section__content">
         <p class="lead">${escapeHTML(content.contact.intro)}</p>
         <ul class="static-contact-list">${contact}</ul>
+        <div class="static-contact__actions">
+          <button type="button" class="copy-button" data-copy-email>
+            ${icon("copy")}
+            <span>${escapeHTML(content.ui.copyEmail)}</span>
+          </button>
+        </div>
         <p class="aside-note">${escapeHTML(content.contact.finalNote)}</p>
       </div>
     </section>`;
@@ -755,7 +734,7 @@ function buildAccessibleContent(): string {
     .map((link) => `<li>${escapeHTML(link.label)}: ${escapeHTML(link.value)} (${escapeHTML(link.href)})</li>`)
     .join("");
   return `<article>
-    <h1>${escapeHTML(content.identity.name)} — ${escapeHTML(content.identity.role)}</h1>
+    <h2>${escapeHTML(content.identity.name)} — ${escapeHTML(content.identity.role)}</h2>
     <p>${escapeHTML(content.identity.tagline)}</p>
     <p>${escapeHTML(content.identity.availability)}. ${escapeHTML(content.identity.location)}.</p>
     <h2>${escapeHTML(content.nav[1].title)} — ${escapeHTML(content.nav[1].eyebrow)}</h2>
@@ -952,11 +931,4 @@ export function setProjectPanel(
       if (heading) heading.setAttribute("tabindex", "-1");
     }
   }
-}
-
-export function renderStaticSectionLinks(prefix: string): string {
-  return content.nav
-    .slice(1)
-    .map((section) => `<a href="#${prefix}-${section.id}">${escapeHTML(section.nav)}</a>`)
-    .join("");
 }
