@@ -8,7 +8,7 @@ type BenchNavigator = Navigator & {
 
 function readTierOverride(): QualityName | null {
   const value = new URLSearchParams(window.location.search).get("tier");
-  if (value === "high" || value === "medium" || value === "low") return value;
+  if (value === "high" || value === "medium" || value === "low" || value === "lite") return value;
   return null;
 }
 
@@ -27,12 +27,13 @@ export async function chooseQualityTier(): Promise<QualityName> {
   if (override) return override;
 
   if (window.innerWidth < 880 || window.matchMedia("(pointer: coarse)").matches) {
-    return "low";
+    return "lite";
   }
 
   const nav = navigator as BenchNavigator;
   const cores = nav.hardwareConcurrency ?? 8;
   const memory = nav.deviceMemory ?? 8;
+  if (memory <= 4) return "lite";
   let fallbackTier: QualityName = cores <= 4 || memory <= 4 ? "medium" : "high";
 
   let renderer: THREE.WebGLRenderer | null = null;

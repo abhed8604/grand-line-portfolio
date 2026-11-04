@@ -34,7 +34,13 @@ export interface LinkItem {
 
 export interface SkillGroup {
   label: string;
+  theme: string;
   items: string[];
+}
+
+export interface ProjectMetric {
+  value: string;
+  label: string;
 }
 
 export interface Project {
@@ -42,9 +48,20 @@ export interface Project {
   title: string;
   short: string;
   description: string;
+  problem: string;
+  approach: string;
+  result: string;
+  metrics?: ProjectMetric[];
   tech: string[];
   links: LinkItem[];
   thumbnail?: string;
+}
+
+export interface CertificationEntry {
+  name: string;
+  issuer: string;
+  year: string;
+  href?: string;
 }
 
 export interface EducationEntry {
@@ -75,6 +92,16 @@ export const content = {
       "Portfolio of Abhed Srivastava — data engineering, analytics and applied AI. B.Tech Mechanical Engineering at BIT Mesra.",
     ogImage: "./og.png",
     themeColor: "#000000",
+  },
+
+  /**
+   * Privacy-friendly analytics, OFF unless an id is present.
+   * TODO(content): set provider + id + scriptUrl to enable.
+   */
+  analytics: {
+    provider: "" as "" | "plausible" | "umami",
+    id: "",
+    scriptUrl: "",
   },
 
   brand: {
@@ -108,55 +135,27 @@ export const content = {
   ] satisfies NavItem[],
 
   /**
-   * Thematic margin notes that keep the wide screen balanced on About and
-   * Education. Purely decorative — safe to rewrite or remove.
-   */
-  sceneNotes: {
-    about: {
-      label: "CAPTAIN'S LOG / 002",
-      title: "THE CAPTAIN",
-      body: "Wears the hat. Sets the course. Keeps the crew moving.",
-      meta: "N 23° 20' / E 85° 19'",
-    },
-  },
-
-  /**
    * Microtype drawn directly in the LED particle field. The large stage titles
    * are taken from `nav[].title`, so editing the chapter name updates both the
-   * DOM and the light.
+   * DOM and the light. Decorative captions stay deliberately sparse.
    */
   sceneLabels: {
     loaderBoot: "COLD BOOT / ASSEMBLING",
     loaderEdgeLeft: "COLD LIGHT / NANO SWARM",
-    loaderEdgeRight: "N 23° 20' / E 85° 19'",
-    homeLog: "SKULL ISLAND / LOG 001",
-    homeRoute: "GRAND LINE / 001",
-    homeKicker: "SET SAIL",
-    aboutKicker: "LOG 002 / THE BEGINNING",
-    aboutCoordinates: "N 23° 20' / E 85° 19'",
-    skillsKicker: "LOG 003 / THE PRACTICE",
-    skillsFoot: "FOUR POINTS OF THE PRACTICE",
-    projectsKicker: "LOG 004 / THE WORK",
-    projectsFoot: "MARE INCOGNITA",
-    projectKicker: "DETAILED LOG / SELECTED",
     projectLog: "PROJECT LOG",
-    educationKicker: "LOG 005 / THE LESSONS",
-    experienceKicker: "LOG 006 / THE DEEPER WATER",
-    resumeKicker: "CURRENT BOUNTY / DATA & AI",
-    contactKicker: "LOG 008 / THE LAST ISLAND",
-    contactFoot: "X MARKS THE SPOT",
     onePieceTitle: "THE ONE PIECE",
     onePieceLine: "IS REAL",
   },
 
   ui: {
     skip: "Skip to content",
-    quickView: "Quick View",
+    quickView: "Quick view",
     quickViewShort: "Static view",
     close: "Close",
     menu: "Sections",
     loading: "Assembling the Grand Line",
     loadingShort: "Cold boot",
+    skipIntro: "Skip intro",
     enter: "Enter the Grand Line",
     statusReady: "Ready",
     goTo: "Go to",
@@ -173,9 +172,15 @@ export const content = {
     selectProject: "Open project",
     projectClose: "Close project",
     projectIndex: "Project index",
+    problemLabel: "Problem",
+    approachLabel: "Approach",
+    resultLabel: "Result",
+    resultMissing: "TODO(content): add a measured result for this project.",
+    metricsLabel: "Result metrics",
     resumeDownload: "Download résumé",
     resumeFormat: "PDF · one page",
     contactPrompt: "Have a voyage in mind?",
+    emailMe: "Email me",
     copyEmail: "Copy email",
     copied: "Copied",
     backToTop: "Back to top",
@@ -189,7 +194,6 @@ export const content = {
       "WebGL is unavailable, so the particle edition is resting. The full portfolio is still here, in plain LED type.",
     reducedHint: "Motion reduced. The log is calmer for it.",
     statusLabel: "Status",
-    coordinates: "Grand Line · 0° 00′",
     qualityLabel: "LED array",
     online: "Signal live",
     handrail: "Drag the horizon. Read the signs.",
@@ -217,6 +221,8 @@ export const content = {
       leadership: "Leadership",
       achievement: "Achievement",
     },
+    certificationsLabel: "Certifications and currently learning",
+    slowToast: "Running slow? Switch to Quick view",
     contents: "Contents",
     quickViewNote: "The complete portfolio in plain LED type.",
     viewStatic: "Read the plain edition",
@@ -227,19 +233,23 @@ export const content = {
       "A practice built across data engineering, analytics and applied AI — from the warehouse and the model to the interface that explains them.",
     groups: [
       {
-        label: "Build",
+        label: "Languages",
+        theme: "Build",
         items: ["Python", "SQL", "C / C++", "JavaScript / Bash"],
       },
       {
-        label: "Motion",
+        label: "Tools and BI",
+        theme: "Motion",
         items: ["Power BI", "Streamlit", "Matplotlib", "Pandas / NumPy"],
       },
       {
-        label: "Systems",
+        label: "Data and Infrastructure",
+        theme: "Systems",
         items: ["SQL Server / MySQL", "ETL / Data modeling", "Docker / Linux", "Git / GitHub"],
       },
       {
-        label: "Craft",
+        label: "ML and AI",
+        theme: "Craft",
         items: [
           "Scikit-learn / XGBoost",
           "LangChain / LangGraph",
@@ -262,6 +272,16 @@ export const content = {
         short: "A Medallion-architecture warehouse unifying ERP and CRM data for analytics.",
         description:
           "Designed a three-tier Bronze–Silver–Gold warehouse with automated ETL across two source systems. Authored T-SQL transformations into an optimised star schema, improving analytical query performance by 40%, and built Power BI dashboards spanning 15+ customer, product and sales metrics.",
+        problem:
+          "A Medallion-architecture warehouse unifying ERP and CRM data for analytics.",
+        approach:
+          "Designed a three-tier Bronze–Silver–Gold warehouse with automated ETL across two source systems. Authored T-SQL transformations into an optimised star schema.",
+        result:
+          "Improved analytical query performance by 40% and built Power BI dashboards spanning 15+ customer, product and sales metrics.",
+        metrics: [
+          { value: "40%", label: "query performance" },
+          { value: "15+", label: "dashboards" },
+        ],
         tech: ["SQL Server", "T-SQL", "ETL", "Data Modeling", "Power BI"],
         links: [{ label: "GitHub", href: "https://github.com/abhed8604" }],
       },
@@ -271,6 +291,16 @@ export const content = {
         short: "Statistical drivers and predictive models for 7,000+ customer records.",
         description:
           "Analysed 7,000+ records across nine variables and tested churn differences with chi-square, Welch's t-test and ANOVA with Tukey HSD — finding 42.7% churn on month-to-month contracts versus 2.8% on two-year contracts. Benchmarked logistic regression, random forest and XGBoost to 0.837 ROC-AUC, with SHAP feature importance corroborating the statistical drivers.",
+        problem:
+          "Statistical drivers and predictive models for 7,000+ customer records.",
+        approach:
+          "Analysed 7,000+ records across nine variables and tested churn differences with chi-square, Welch's t-test and ANOVA with Tukey HSD.",
+        result:
+          "Found 42.7% churn on month-to-month contracts versus 2.8% on two-year contracts, and benchmarked logistic regression, random forest and XGBoost to 0.837 ROC-AUC, with SHAP feature importance corroborating the statistical drivers.",
+        metrics: [
+          { value: "0.837", label: "ROC-AUC" },
+          { value: "7,000+", label: "records" },
+        ],
         tech: ["Python", "Pandas", "SciPy", "Scikit-learn", "XGBoost", "SHAP", "Streamlit"],
         links: [{ label: "GitHub", href: "https://github.com/abhed8604" }],
       },
@@ -280,6 +310,11 @@ export const content = {
         short: "A multi-agent system that routes questions to SQL, RAG or web search.",
         description:
           "Built a LangGraph system with an LLM supervisor that routes natural-language questions to specialised SQL, RAG or web-search agents through structured output. Added a SQL agent with automatic retries from error feedback, a hallucination-resistant FAISS RAG pipeline, persistent conversational memory and a Streamlit interface.",
+        problem:
+          "A multi-agent system that routes questions to SQL, RAG or web search.",
+        approach:
+          "Built a LangGraph system with an LLM supervisor that routes natural-language questions to specialised SQL, RAG or web-search agents through structured output. Added a SQL agent with automatic retries from error feedback, a hallucination-resistant FAISS RAG pipeline, persistent conversational memory and a Streamlit interface.",
+        result: "",
         tech: ["Python", "LangChain", "LangGraph", "LLMs", "RAG", "FAISS", "SQLite", "Streamlit"],
         links: [{ label: "GitHub", href: "https://github.com/abhed8604" }],
       },
@@ -289,6 +324,16 @@ export const content = {
         short: "An LP and Monte Carlo model for ordering under demand uncertainty.",
         description:
           "Formulated a piecewise-linear programme to set order quantities across six SKUs under a $6,000 budget and 350 sq. ft. storage limit. Stress-tested the plan with 5,000 Monte Carlo simulations, improving average weekly profit by 9.9% and service level by 15.9 points over a mean-demand baseline.",
+        problem:
+          "An LP and Monte Carlo model for ordering under demand uncertainty.",
+        approach:
+          "Formulated a piecewise-linear programme to set order quantities across six SKUs under a $6,000 budget and 350 sq. ft. storage limit. Stress-tested the plan with 5,000 Monte Carlo simulations.",
+        result:
+          "Improved average weekly profit by 9.9% and service level by 15.9 points over a mean-demand baseline.",
+        metrics: [
+          { value: "9.9%", label: "weekly profit" },
+          { value: "15.9 pts", label: "service level" },
+        ],
         tech: ["Python", "Linear Programming", "NumPy", "Monte Carlo", "Matplotlib"],
         links: [{ label: "GitHub", href: "https://github.com/abhed8604" }],
       },
@@ -336,6 +381,12 @@ export const content = {
           "Helped organise and run 20+ events across multiple venues, coordinating a team of 10+ volunteers for the campus cultural fest.",
       },
     ] satisfies ExperienceEntry[],
+    /**
+     * TODO(content): add certifications or current courses here. The strip is
+     * hidden automatically while this array is empty.
+     * Example: { name: "...", issuer: "...", year: "2026", href: "..." }
+     */
+    certifications: [] as CertificationEntry[],
   },
 
   resume: {
@@ -343,6 +394,7 @@ export const content = {
       "One page covering education, selected projects, technical skills, an award and leadership experience.",
     url: "./resume.pdf",
     downloadName: "Abhed_Srivastava_Resume.pdf",
+    bounty: "฿ 40% · 0.837 · 9.9%",
     facts: [
       { label: "Focus", value: "Data engineering · Analytics · Applied AI" },
       { label: "Based", value: "Ranchi, India" },

@@ -17,6 +17,7 @@ export interface Artwork {
   height: number;
   paths: Array<{ d: string; stroke?: StrokeRule; fill?: boolean; alpha?: number }>;
   cuts?: Array<{ d: string; width?: number; fill?: boolean; dash?: number[]; alpha?: number }>;
+  gold?: Array<{ d: string; stroke?: StrokeRule; fill?: boolean; alpha?: number }>;
   drawExtra?: (ctx: CanvasRenderingContext2D) => void;
 }
 
@@ -89,6 +90,10 @@ const hatSkull: Artwork = {
     // Jaw and cheek seams.
     { d: "M300 536 C322 562 342 582 372 600 M600 536 C578 562 558 582 528 600", width: 3, dash: [6, 10] },
   ],
+  gold: [
+    // The straw-hat band is the one warm accent in the jolly roger.
+    { d: "M232 264 C340 288 560 288 668 264", stroke: { width: 17, alpha: 0.95 } },
+  ],
 };
 
 const luffy: Artwork = {
@@ -96,116 +101,88 @@ const luffy: Artwork = {
   width: 900,
   height: 1250,
   paths: [
-    // Hat crown and huge brim behind the head.
+    // Straw hat, seen from behind: crown, wide brim and a raised crown seam.
     {
-      d: "M270 330 C280 190 350 120 450 120 C550 120 620 190 630 330 C520 350 380 350 270 330 Z",
+      d: "M252 340 C262 206 340 142 450 142 C560 142 638 206 648 340 C558 366 342 366 252 340 Z",
       fill: true,
     },
     {
-      d: "M56 332 C188 276 310 258 450 258 C590 258 712 276 844 332 C772 402 620 432 450 432 C280 432 128 402 56 332 Z",
+      d: "M78 352 C196 292 304 276 450 276 C596 276 704 292 822 352 C736 418 586 446 450 446 C314 446 164 418 78 352 Z",
       fill: true,
     },
-    // Face, ears and neck.
+    { d: "M252 340 C350 366 550 366 648 340", stroke: { width: 6, alpha: 0.8 } },
+    { d: "M80 352 C200 298 700 298 820 352", stroke: { width: 4, alpha: 0.5 } },
+    { d: "M300 220 C352 178 548 178 600 220", stroke: { width: 4, dash: [8, 15], alpha: 0.55 } },
+    { d: "M276 264 C344 218 556 218 624 264", stroke: { width: 3, dash: [7, 18], alpha: 0.4 } },
+    // Neck and the back of the vest.
+    { d: "M404 430 L496 430 L508 500 L392 500 Z", fill: true },
     {
-      d: "M326 402 C326 340 380 306 450 306 C520 306 574 340 574 402 L570 502 C568 564 520 608 450 616 C380 608 332 564 330 502 Z",
+      d: "M298 560 C336 508 386 486 450 486 C514 486 564 508 602 560 L646 716 C654 796 632 858 610 892 L290 892 C268 858 246 796 254 716 Z",
       fill: true,
     },
-    { d: "M294 470 A30 34 0 1 0 354 470 A30 34 0 1 0 294 470 Z", fill: true },
-    { d: "M546 470 A30 34 0 1 0 606 470 A30 34 0 1 0 546 470 Z", fill: true },
-    { d: "M412 606 L488 606 L502 664 L398 664 Z", fill: true },
-    // Open vest torso.
+    // Raised right arm, reaching toward the horizon.
     {
-      d: "M302 670 C334 640 380 626 410 622 L490 622 C520 626 566 640 598 670 C618 740 614 812 598 866 L302 866 C286 812 282 740 302 670 Z",
+      d: "M594 548 C666 528 724 470 764 404 L834 442 C790 548 720 644 626 704 Z",
       fill: true,
     },
-    // Raised right arm, reaching for the hat brim.
-    { d: "M576 682 C636 672 686 618 722 548", stroke: { width: 50 } },
-    { d: "M718 524 A36 36 0 1 0 790 524 A36 36 0 1 0 718 524 Z", fill: true },
-    // Left arm thrown out toward the horizon.
-    { d: "M324 682 C266 700 224 744 198 798", stroke: { width: 50 } },
-    { d: "M144 792 A35 35 0 1 0 214 792 A35 35 0 1 0 144 792 Z", fill: true },
+    {
+      d: "M758 372 C790 350 836 362 852 394 C868 428 850 466 816 476 C782 486 748 462 746 428 C744 406 746 388 758 372 Z",
+      fill: true,
+    },
+    // Left arm hanging loose at the side.
+    {
+      d: "M306 566 C274 650 250 748 238 844 L312 856 C328 766 348 684 372 606 Z",
+      fill: true,
+    },
+    {
+      d: "M228 842 C260 830 300 842 306 872 C312 902 290 928 258 928 C226 928 206 904 210 878 C212 862 218 850 228 842 Z",
+      fill: true,
+    },
     // Shorts, legs and sandals.
+    { d: "M300 862 L600 862 L622 1000 L492 1040 L450 950 L408 1040 L278 1000 Z", fill: true },
     {
-      d: "M318 844 L582 844 L618 958 L492 1004 L450 916 L408 1004 L282 958 Z",
-      fill: true,
-    },
-    { d: "M338 966 C328 1040 310 1102 288 1160", stroke: { width: 62 } },
-    { d: "M522 970 C550 1040 574 1098 596 1150", stroke: { width: 62 } },
-    {
-      d: "M228 1166 C258 1140 322 1138 356 1156 C378 1168 372 1198 350 1206 L244 1206 C222 1198 212 1180 228 1166 Z",
+      d: "M326 1000 C316 1070 298 1134 280 1186 L360 1200 C380 1130 396 1070 406 1016 Z",
       fill: true,
     },
     {
-      d: "M550 1158 C580 1132 644 1134 674 1152 C694 1164 686 1192 664 1200 L560 1200 C540 1192 534 1174 550 1158 Z",
+      d: "M574 1000 C596 1070 616 1130 636 1180 L556 1200 C536 1130 514 1070 494 1016 Z",
       fill: true,
     },
-    // Hat band and brim seam.
-    { d: "M276 314 C350 334 550 334 624 314", stroke: { width: 28 } },
-    { d: "M96 346 C218 300 682 300 804 346", stroke: { width: 4, dash: [10, 14], alpha: 0.6 } },
-    // Straw stitching.
-    { d: "M314 194 C366 158 534 158 586 194", stroke: { width: 4, dash: [8, 15], alpha: 0.55 } },
-    { d: "M288 238 C348 200 552 200 612 238", stroke: { width: 3, dash: [7, 18], alpha: 0.4 } },
-    // Vest edges and seams.
-    { d: "M358 664 C346 724 340 796 338 850", stroke: { width: 4, dash: [8, 13], alpha: 0.7 } },
-    { d: "M542 664 C554 724 560 796 562 850", stroke: { width: 4, dash: [8, 13], alpha: 0.7 } },
-    // Belt / shorts waist.
-    { d: "M322 842 C398 862 502 862 578 842", stroke: { width: 15 } },
-    // Sandal soles and straps.
-    { d: "M240 1180 C300 1188 346 1182 360 1200", stroke: { width: 6 } },
-    { d: "M562 1172 C620 1180 664 1176 678 1194", stroke: { width: 6 } },
-    { d: "M268 1150 L342 1172 M590 1142 L658 1164", stroke: { width: 4 } },
+    {
+      d: "M240 1186 C274 1162 332 1164 366 1182 C388 1194 382 1224 360 1232 L254 1232 C232 1224 222 1206 240 1186 Z",
+      fill: true,
+    },
+    {
+      d: "M542 1180 C576 1158 636 1160 668 1178 C690 1190 682 1218 660 1226 L554 1226 C532 1218 524 1200 542 1180 Z",
+      fill: true,
+    },
+    // Back seams and cuffs keep the silhouette from reading as a flat blob.
+    { d: "M360 512 C350 636 348 760 354 878", stroke: { width: 4, dash: [8, 13], alpha: 0.7 } },
+    { d: "M540 512 C550 636 552 760 546 878", stroke: { width: 4, dash: [8, 13], alpha: 0.7 } },
+    { d: "M304 868 C380 890 520 890 596 868", stroke: { width: 13 } },
+    { d: "M338 1032 C330 1086 316 1140 302 1180", stroke: { width: 3, dash: [7, 12], alpha: 0.5 } },
+    { d: "M562 1032 C570 1086 584 1140 598 1180", stroke: { width: 3, dash: [7, 12], alpha: 0.5 } },
+    { d: "M248 1204 C304 1212 348 1208 366 1226", stroke: { width: 6 } },
+    { d: "M552 1198 C608 1206 652 1202 670 1220", stroke: { width: 6 } },
   ],
   cuts: [
-    // Spiky hair, cut dark from the filled face.
-    {
-      d: "M316 432 C300 348 364 288 450 288 C536 288 600 348 584 432 L570 404 L560 450 L542 390 L528 448 L510 376 L494 450 L478 366 L460 450 L444 366 L428 450 L410 376 L394 448 L380 390 L366 450 L350 404 Z",
-      fill: true,
-    },
-    // Temple hair.
-    { d: "M316 432 C304 472 310 522 330 556 L350 552 L340 500 L356 466 Z", fill: true },
-    { d: "M584 432 C596 472 590 522 570 556 L550 552 L560 500 L544 466 Z", fill: true },
-    // Closed, laughing eyes.
-    { d: "M344 488 C376 444 422 444 446 488", width: 23 },
-    { d: "M454 488 C478 444 524 444 556 488", width: 23 },
-    // Scar under the left eye: a bold vertical cut with two cross stitches.
-    { d: "M518 498 L518 548", width: 13 },
-    { d: "M500 512 L536 512", width: 12 },
-    { d: "M502 536 L534 536", width: 12 },
-    // Nose tick.
-    { d: "M442 506 C448 518 456 518 462 508", width: 7 },
-    // Wide open grin.
-    {
-      d: "M338 542 C380 624 520 624 562 542 C516 566 384 566 338 542 Z",
-      fill: true,
-    },
-    { d: "M326 530 L348 552 M348 530 L326 552 M574 530 L552 552 M552 530 L574 552", width: 7 },
-    // Open shirt V and centre seam. The V reaches the waistband so the vest
-    // reads as two hanging panels instead of a closed shirt.
-    { d: "M388 626 L450 850 L512 626", width: 26 },
-    { d: "M450 850 L450 858", width: 7 },
-    { d: "M380 656 C370 722 364 790 362 848", width: 6 },
-    { d: "M520 656 C530 722 536 790 538 848", width: 6 },
-    // Shorts split and cuff lines.
-    { d: "M450 872 L450 966", width: 8 },
-    { d: "M300 954 C344 968 390 968 410 954 M490 954 C510 968 556 968 600 954", width: 5 },
-    // Collar bones.
-    { d: "M402 676 C424 690 438 692 450 690 M498 676 C476 690 462 692 450 690", width: 3, alpha: 0.9 },
-    // Straw hat band is drawn as a cut for contrast.
-    { d: "M276 314 C350 334 550 334 624 314", width: 28 },
-    // Hair strand gaps.
-    { d: "M390 340 L414 396 M450 330 L450 400 M510 340 L486 396", width: 3 },
+    // Brim shadow and crown separation.
+    { d: "M126 362 C240 408 660 408 774 362", width: 8 },
+    // The vest opens down the centre of the back.
+    { d: "M450 500 L450 876", width: 6 },
+    // Shoulder yokes.
+    { d: "M382 520 C370 626 366 752 370 872", width: 3, dash: [6, 12] },
+    { d: "M518 520 C530 626 534 752 530 872", width: 3, dash: [6, 12] },
+    // Shorts split and leg openings.
+    { d: "M450 878 L450 992", width: 8 },
+    { d: "M300 1002 C340 1016 386 1016 408 1002 M492 1002 C514 1016 560 1016 600 1002", width: 5 },
+    // Sandal straps.
+    { d: "M266 1180 L340 1202 M590 1174 L660 1196", width: 4 },
   ],
-  drawExtra(ctx) {
-    // Teeth sit inside the dark grin. They are deliberately chunky so they
-    // survive the particle sampler at small figure sizes.
-    ctx.save();
-    ctx.fillStyle = "#fff";
-    for (const x of [382, 422, 462, 502]) {
-      ctx.fillRect(x, 560, 20, 20);
-      ctx.fillRect(x + 5, 580, 10, 7);
-    }
-    ctx.restore();
-  },
+  gold: [
+    // The straw hat band is the only warm note on the figure.
+    { d: "M258 332 C350 358 550 358 642 332", stroke: { width: 26, alpha: 0.95 } },
+  ],
 };
 
 const logPose: Artwork = {
@@ -356,6 +333,11 @@ const ship: Artwork = {
     { d: "M300 690 C470 742 762 731 1004 706 M330 710 C500 752 760 745 970 720", width: 3, dash: [12, 12] },
     // Wave highlights.
     { d: "M150 813 C210 800 250 822 306 816 M712 826 C768 812 810 830 862 822", width: 4, dash: [6, 14] },
+  ],
+  gold: [
+    // The lion figurehead carries the ship's warm accent.
+    { d: "M212 620 A104 104 0 1 0 210 828 A104 104 0 1 0 212 620 Z", stroke: { width: 8, alpha: 0.9 } },
+    { d: "M212 603 L212 565 M302 654 L338 628 M308 790 L344 813 M211 846 L211 880 M117 785 L82 807 M110 653 L75 627", stroke: { width: 9, alpha: 0.8 } },
   ],
 };
 

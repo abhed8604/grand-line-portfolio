@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import {
   MAX_POINTS,
+  MIN_POINTS,
   QUALITY_TIERS,
   SIM_HEIGHT,
   SIM_WIDTH,
@@ -259,6 +260,23 @@ class GpuSimulation {
     previous.dispose();
   }
 
+  /** Reduced-motion path: place every LED on the new artwork immediately. */
+  snapTo(texture: THREE.DataTexture, data: Float32Array): void {
+    const image = this.seedPosition.image as { data: Float32Array };
+    const target = image.data;
+    for (let i = 0; i < MAX_POINTS; i += 1) {
+      target[i * 4] = data[i * 4];
+      target[i * 4 + 1] = data[i * 4 + 1];
+      target[i * 4 + 2] = data[i * 4 + 2];
+      target[i * 4 + 3] = 1;
+    }
+    this.seedPosition.needsUpdate = true;
+    this.setTarget(texture);
+    this.firstPass = true;
+    this.velocityIndex = 0;
+    this.positionIndex = 0;
+  }
+
   setReducedMotion(reduced: boolean): void {
     this.reducedMotion = reduced;
     this.velocityUniforms.uReducedMotion.value = reduced ? 1 : 0;
@@ -390,7 +408,11 @@ export class LEDEngine {
   private elapsed = 0;
   private frames = 0;
   private statsElapsed = 0;
-  private lowStreak = 0;
+  private activePointCount: number;
+  private qualityElapsed = 0;
+  private qualityFrameSum = 0;
+  private qualityFrames = 0;
+  private visibilityObserver?: IntersectionObserver;
   private suspended = new Set<string>();
   private destroyed = false;
   private reducedMotion = false;
@@ -412,6 +434,7 @@ export class LEDEngine {
   ) {
     this.canvas = canvas;
     this.tier = QUALITY_TIERS[options.quality];
+    this.activePointCount = this.tier.points;
     this.reducedMotion = Boolean(options.reducedMotion);
     this.forcedTier = Boolean(new URLSearchParams(window.location.search).get("tier"));
     this.onStats = callbacks.onStats;
@@ -469,7 +492,7 @@ export class LEDEngine {
     }
     this.planeGeometry = new THREE.BufferGeometry();
     this.planeGeometry.setAttribute("position", new THREE.BufferAttribute(refs, 3));
-    this.planeGeometry.setDrawRange(0, this.tier.points);
+    this.planeGeometry.setDrawRange(0, this.activePointCount);
 
     this.pointsMaterial = new THREE.RawShaderMaterial({
       vertexShader: ledVertexShader,
@@ -481,7 +504,7 @@ export class LEDEngine {
         uPointerActive: { value: 0 },
         uTime: { value: 0 },
         uDPR: { value: this.renderer.getPixelRatio() },
-        uPixelBoost: { value: this.tier.name === "low" ? 1.4 : 1 },
+        uPixelBoost: { value: this.tier.name === "low" || this.tier.name === "lite" ? 1.4 : 1 },
         uIdleDrift: { value: idleDrift },
         uPushRadius: { value: pushRadius },
         uReducedMotion: { value: this.reducedMotion ? 1 : 0 },
@@ -509,6 +532,21 @@ export class LEDEngine {
       this.release("hidden");
     }
   };
+
+  /** Stop rendering when the chapter stage scrolls out of view. */
+  observeVisibility(element: Element | null): void {
+    this.visibilityObserver?.disconnect();
+    if (!element || typeof IntersectionObserver === "undefined") return;
+    this.visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        const visible = entries[0]?.isIntersecting ?? true;
+        if (visible) this.release("offscreen");
+        else this.hold("offscreen");
+      },
+      { threshold: 0.01 },
+    );
+    this.visibilityObserver.observe(element);
+  }
 
   private startLoop(): void {
     if (this.raf || this.destroyed) return;
@@ -554,8 +592,12 @@ export class LEDEngine {
 
   morphTo(cloud: TargetCloud): void {
     const texture = createDataTexture(cloud.data, SIM_WIDTH, SIM_HEIGHT);
-    this.sim.setTarget(texture);
-    this.sim.setActiveRows(this.tier.rows);
+    if (this.reducedMotion) {
+      this.sim.snapTo(texture, cloud.data);
+    } else {
+      this.sim.setTarget(texture);
+    }
+    this.sim.setActiveRows(Math.max(1, this.activePointCount / SIM_WIDTH));
     const uniforms = this.pointsMaterial.uniforms;
     uniforms.uPositions.value = this.sim.positionTexture;
     uniforms.uTargets.value = texture;
@@ -563,9 +605,13 @@ export class LEDEngine {
 
   setQuality(name: QualityName): EngineStats {
     this.tier = QUALITY_TIERS[name];
-    this.sim.setActiveRows(this.tier.rows);
-    this.planeGeometry.setDrawRange(0, this.tier.points);
-    this.pointsMaterial.uniforms.uPixelBoost.value = name === "low" ? 1.4 : 1;
+    // The point budget only steps down for the life of the session, even if a
+    // higher tier is requested later.
+    this.activePointCount = Math.min(this.tier.points, this.activePointCount);
+    this.sim.setActiveRows(Math.max(1, this.activePointCount / SIM_WIDTH));
+    this.planeGeometry.setDrawRange(0, this.activePointCount);
+    this.pointsMaterial.uniforms.uPixelBoost.value =
+      name === "low" || name === "lite" ? 1.4 : 1;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.tier.dpr));
     this.renderer.setSize(this.width, this.height, false);
     this.pointsMaterial.uniforms.uDPR.value = this.renderer.getPixelRatio();
@@ -574,16 +620,25 @@ export class LEDEngine {
     return stats;
   }
 
-  private downgrade(): void {
-    if (this.forcedTier) return;
-    if (this.tier.name === "high") this.setQuality("medium");
-    else if (this.tier.name === "medium") this.setQuality("low");
+  /** Step the point budget down without ever stepping back up this session. */
+  private reducePoints(factor = 0.7): void {
+    const next = Math.max(
+      MIN_POINTS,
+      Math.floor((this.activePointCount * factor) / SIM_WIDTH) * SIM_WIDTH,
+    );
+    if (next >= this.activePointCount) return;
+    this.activePointCount = next;
+    const rows = Math.max(1, next / SIM_WIDTH);
+    this.sim.setActiveRows(rows);
+    this.planeGeometry.setDrawRange(0, next);
+    const stats = this.currentStats(0);
+    this.onQuality?.(stats);
   }
 
   private currentStats(fps: number): EngineStats {
     return {
       fps: Math.round(fps),
-      points: this.tier.points,
+      points: this.activePointCount,
       quality: this.tier.name,
       label: this.tier.label,
     };
@@ -672,20 +727,27 @@ export class LEDEngine {
     // Statistics and automatic quality reduction.
     this.frames += 1;
     this.statsElapsed += rawDelta;
+    this.qualityElapsed += rawDelta;
+    this.qualityFrameSum += rawDelta;
+    this.qualityFrames += 1;
     if (this.statsElapsed >= 1) {
       const fps = this.frames / this.statsElapsed;
       const stats = this.currentStats(fps);
       this.onStats?.(stats);
-      if (this.autoQualityEnabled && this.elapsed > 4.5 && this.tier.name !== "low") {
-        if (fps < 44) this.lowStreak += 1;
-        else this.lowStreak = 0;
-        if (this.lowStreak >= 2) {
-          this.lowStreak = 0;
-          this.downgrade();
-        }
-      }
       this.frames = 0;
       this.statsElapsed = 0;
+    }
+    if (
+      this.autoQualityEnabled &&
+      !this.forcedTier &&
+      this.elapsed > 4.5 &&
+      this.qualityElapsed >= 2
+    ) {
+      const averageFrameMs = (this.qualityFrameSum / Math.max(1, this.qualityFrames)) * 1000;
+      if (averageFrameMs > 22) this.reducePoints(0.7);
+      this.qualityElapsed = 0;
+      this.qualityFrameSum = 0;
+      this.qualityFrames = 0;
     }
 
     this.raf = requestAnimationFrame(this.renderFrame);
@@ -696,12 +758,13 @@ export class LEDEngine {
   }
 
   get activePoints(): number {
-    return this.tier.points;
+    return this.activePointCount;
   }
 
   destroy(): void {
     this.destroyed = true;
     this.stopLoop();
+    this.visibilityObserver?.disconnect();
     document.removeEventListener("visibilitychange", this.handleVisibility);
     this.scene.remove(this.points);
     this.planeGeometry.dispose();

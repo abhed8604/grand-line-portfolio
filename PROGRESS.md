@@ -1,5 +1,26 @@
 # Progress
 
+## 2026-11-04 — Readability, accessibility and finish pass
+- Integrated Phases 2–9 from the handover into one working pass: readable sans body copy, 2×2 skill cards, wider resume column, gold CTA/rail/focus system, unified particle edge/fill weighting, original back-view Luffy silhouette, gold hat band and lion figurehead, lite mobile tier, adaptive point-budget reduction, mobile section vignettes, loader skip/keyboard support, slow-FPS Quick View toast, opt-in analytics, and refreshed metadata/favicon.
+- Removed remaining progress clutter: loader coordinates, right-edge coordinate label, orphan scene-note/index/skills-ring CSS and DOM, and the old scroll cue.
+- Wired engine visibility pause, reduced-motion snap/morph gating, click/burst gating for mobile and reduced motion, and loader skip (button plus Escape).
+- Added `src/ui/analytics.ts` (off unless provider, id and script URL are configured) and `src/ui/vignettes.ts` (blue dot-matrix mobile section motifs).
+- Updated `index.html` metadata, added a real `#main-content` skip target, and replaced the favicon with an LED skull wearing a gold-banded straw hat.
+- Documentation: refreshed README tier/adaptive/scene-label notes and added this pass record.
+- QA: `npm run check`, `npm run build`, `npm run test` (4/4), `npm run quick-check`, `npm run interaction-check`, and the full screenshot matrix at 1440×900, 1366×768, 390×844 and 320×720 pass. No unexpected console messages; only the intentional no-WebGL fallback and the >440 kB Three.js chunk warning remain. No horizontal overflow. No visible text below 12px.
+- Final layout fixes: removed stale absolute-position offsets that broke the 2×2 skill grid at 1366×768, shifted the Projects particle title clear of the index, and removed the stray project count so the right rail is the only progress indicator. The project dock still needs a small internal scroll at shorter heights; all content remains reachable.
+- Remaining content TODOs: business AI agent measured result; certifications array; individual project repository/demo links; analytics credentials.
+- Graph refreshed after the pass: 436 nodes, 731 edges, 26 communities.
+- Commit note: phases were combined into one integrated polish commit instead of strict per-phase commits because the working tree already mixed Phase 2–9 edits in the same files. This deviation is intentional and recorded here.
+
+## 2026-11-03 — Graphify setup verification
+- Re-verified Python 3.14.4, graphifyy 0.9.17 (uv tool; pipx unavailable), and the OpenCode skill at `~/.config/opencode/skills/graphify/`.
+- Confirmed `.graphifyignore` excludes `node_modules/`, `dist/`, `build/`, logs, and large binary/data files.
+- Re-ran `graphify install --platform opencode` and `graphify opencode install`; plugin and AGENTS.md instructions are in place.
+- Rebuilt the code graph with `graphify update .`: 413 nodes, 692 edges, 24 communities. `graphify query`, `path`, and `explain` all return results.
+- Verified OpenCode loads both plugins via `opencode plugin list`: `opencode-dcp 3.2.0` and `.opencode/plugins/graphify.js`. Root `opencode.json` keeps compaction `auto`/`prune` and the DCP plugin.
+- AGENTS.md is 46 lines. Current graph commit: `f9c53ac5`; run `graphify update .` again after code changes.
+
 ## 2026-11-03 — Ponytail audit fixes
 - Fixed resume download links: updated `safeHref` to permit relative dot paths (`./` and `../`), restoring PDF download across header, desktop resume, mobile flow, and Quick View.
 - Synchronized project particle target on resize: exposed `selectedProjectId()` on `StoryController`, cleared stale `targetCache`, and remorphed to project cloud on resize.

@@ -32,34 +32,19 @@ function externalAttrs(href: string): string {
   return isExternal(href) ? ' target="_blank" rel="noreferrer noopener"' : "";
 }
 
-function sceneMeta(section: (typeof content.nav)[number], index: number, total: number): string {
+function sceneMeta(section: (typeof content.nav)[number]): string {
   return `<div class="scene-meta">
-    <span class="scene-meta__index">${String(index + 1).padStart(2, "0")}</span>
     <span class="scene-meta__rule" aria-hidden="true"></span>
     <span class="scene-meta__eyebrow">${escapeHTML(section.eyebrow)}</span>
-    <span class="scene-meta__total" aria-hidden="true">${String(index + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}</span>
   </div>`;
-}
-
-function sceneNote(
-  note: (typeof content.sceneNotes)[keyof typeof content.sceneNotes],
-): string {
-  return `<aside class="scene-note scene-note--about" aria-hidden="true">
-    <p class="scene-note__head">${icon("compass", "scene-note__icon")}${escapeHTML(note.label)}</p>
-    <p class="scene-note__title">${escapeHTML(note.title)}</p>
-    <p class="scene-note__body">${escapeHTML(note.body)}</p>
-    <p class="scene-note__meta">${escapeHTML(note.meta)}</p>
-  </aside>`;
 }
 
 function makeScene(
   section: (typeof content.nav)[number],
-  index: number,
-  total: number,
   body: string,
 ): string {
   return `<section class="scene scene--${section.id}" id="scene-${section.id}" data-scene="${section.id}" aria-labelledby="scene-title-${section.id}" aria-hidden="true" inert>
-    ${sceneMeta(section, index, total)}
+    ${sceneMeta(section)}
     ${body}
   </section>`;
 }
@@ -67,8 +52,6 @@ function makeScene(
 function buildHome(section: (typeof content.nav)[number], index: number, total: number): string {
   return makeScene(
     section,
-    index,
-    total,
     `<div class="hero-copy" data-reveal>
       <p class="hero-copy__role">${escapeHTML(content.identity.role)}</p>
       <p class="hero-copy__tagline">${escapeHTML(content.identity.tagline)}</p>
@@ -94,8 +77,6 @@ function buildHome(section: (typeof content.nav)[number], index: number, total: 
 function buildAbout(section: (typeof content.nav)[number], index: number, total: number): string {
   return makeScene(
     section,
-    index,
-    total,
     `<div class="about-panel" data-reveal>
       <p class="lead">${escapeHTML(content.identity.bioLead)}</p>
       <p class="body-copy">${escapeHTML(content.identity.bioBody)}</p>
@@ -106,8 +87,7 @@ function buildAbout(section: (typeof content.nav)[number], index: number, total:
         <div><dt>${escapeHTML(content.ui.statusLabel)}</dt><dd>${escapeHTML(content.identity.status)}</dd></div>
       </dl>
       <h2 id="scene-title-about" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
-    </div>
-    ${sceneNote(content.sceneNotes.about)}`,
+    </div>`,
   );
 }
 
@@ -119,6 +99,7 @@ function buildSkills(section: (typeof content.nav)[number], index: number, total
           <span class="skill-cluster__number">${String(groupIndex + 1).padStart(2, "0")}</span>
           <span class="skill-cluster__dot" aria-hidden="true"></span>
           <h3>${escapeHTML(group.label)}</h3>
+          <span class="skill-cluster__theme">${escapeHTML(group.theme)}</span>
         </div>
         <ul class="dot-list">
           ${group.items.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}
@@ -129,11 +110,8 @@ function buildSkills(section: (typeof content.nav)[number], index: number, total
 
   return makeScene(
     section,
-    index,
-    total,
     `<div class="skills-field">
       ${clusters}
-      <span class="skills-field__ring" aria-hidden="true"></span>
     </div>
     <aside class="skills-aside" data-reveal>
       <h2 id="scene-title-skills" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
@@ -153,7 +131,7 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
         ["33%", "83%"],
       ];
       const [x, y] = positions[projectIndex] ?? positions[0];
-      return `<button type="button" class="island-marker" style="--x:${x};--y:${y}" data-project="${escapeHTML(project.id)}" aria-label="${escapeHTML(content.ui.selectProject)}: ${escapeHTML(project.title)}">
+      return `<button type="button" class="island-marker" style="--x:${x};--y:${y}" data-project="${escapeHTML(project.id)}" data-event="project_open" aria-label="${escapeHTML(content.ui.selectProject)}: ${escapeHTML(project.title)}">
         <span class="island-marker__pulse" aria-hidden="true"></span>
         <span class="island-marker__number">${String(projectIndex + 1).padStart(2, "0")}</span>
         <span class="island-marker__label">${escapeHTML(project.title)}</span>
@@ -163,11 +141,21 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
 
   const projectRows = content.projects.entries
     .map(
-      (project, projectIndex) => `<button type="button" class="project-row" data-project="${escapeHTML(project.id)}">
+      (project, projectIndex) => `<button type="button" class="project-row" data-project="${escapeHTML(project.id)}" data-event="project_open">
         <span class="project-row__index">${String(projectIndex + 1).padStart(2, "0")}</span>
         <span class="project-row__main">
           <span class="project-row__title">${escapeHTML(project.title)}</span>
           <span class="project-row__short">${escapeHTML(project.short)}</span>
+          ${
+            project.metrics?.length
+              ? `<span class="metric-chips" aria-label="${escapeHTML(content.ui.metricsLabel)}">${project.metrics
+                  .map(
+                    (metric) =>
+                      `<span class="metric-chip"><strong>${escapeHTML(metric.value)}</strong>${escapeHTML(metric.label)}</span>`,
+                  )
+                  .join("")}</span>`
+              : ""
+          }
         </span>
         ${icon("arrow-up-right", "project-row__arrow")}
       </button>`,
@@ -180,17 +168,40 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
       const links = project.links
         .map(
           (link) =>
-            `<a href="${safeHref(link.href)}" ${externalAttrs(link.href)}>${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right")}</a>`,
+            `<a href="${safeHref(link.href)}" ${externalAttrs(link.href)} data-event="project_link">${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right")}</a>`,
         )
         .join("");
+      const metrics = project.metrics?.length
+        ? `<div class="project-detail__metrics"><span class="micro-label">${escapeHTML(content.ui.metricsLabel)}</span><div class="metric-chips">${project.metrics
+            .map(
+              (metric) =>
+                `<span class="metric-chip"><strong>${escapeHTML(metric.value)}</strong>${escapeHTML(metric.label)}</span>`,
+            )
+            .join("")}</div></div>`
+        : "";
       return `<article class="project-detail" data-project-panel="${escapeHTML(project.id)}" hidden>
         <button type="button" class="back-button" data-project-back>
           ${icon("arrow-left")}<span>${escapeHTML(content.ui.backToMap)}</span>
         </button>
         <p class="project-detail__index">${escapeHTML(content.ui.selectProject)} / ${String(projectIndex + 1).padStart(2, "0")}</p>
         <h3>${escapeHTML(project.title)}</h3>
-        <p class="project-detail__short">${escapeHTML(project.short)}</p>
-        <p class="project-detail__body">${escapeHTML(project.description)}</p>
+        <div class="project-detail__block">
+          <span class="micro-label">${escapeHTML(content.ui.problemLabel)}</span>
+          <p class="project-detail__body">${escapeHTML(project.problem)}</p>
+        </div>
+        <div class="project-detail__block">
+          <span class="micro-label">${escapeHTML(content.ui.approachLabel)}</span>
+          <p class="project-detail__body">${escapeHTML(project.approach)}</p>
+        </div>
+        ${metrics}
+        <div class="project-detail__block">
+          <span class="micro-label">${escapeHTML(content.ui.resultLabel)}</span>
+          ${
+            project.result
+              ? `<p class="project-detail__body">${escapeHTML(project.result)}</p>`
+              : `<p class="project-detail__body todo-content">${escapeHTML(content.ui.resultMissing)}</p>`
+          }
+        </div>
         <div class="project-detail__stack">
           <span class="micro-label">${escapeHTML(content.ui.stackLabel)}</span>
           <ul class="tag-list">${tags}</ul>
@@ -205,8 +216,6 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
 
   return makeScene(
     section,
-    index,
-    total,
     `<div class="project-markers" aria-label="${escapeHTML(content.ui.projectIndex)}">
       ${markers}
       <button class="egg-hotspot egg-hotspot--ship" type="button" data-egg="ship" aria-label="${escapeHTML(content.easterEggs.ship)}">
@@ -219,7 +228,6 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
         <div class="panel-head">
           <span class="micro-label">${escapeHTML(content.ui.projectIndex)}</span>
           <span class="panel-head__rule" aria-hidden="true"></span>
-          <span class="panel-head__count">${String(content.projects.entries.length).padStart(2, "0")}</span>
         </div>
         <p class="project-index__intro">${escapeHTML(content.projects.intro)}</p>
         <div class="project-list" role="list">
@@ -252,8 +260,6 @@ function buildEducation(section: (typeof content.nav)[number], index: number, to
 
   return makeScene(
     section,
-    index,
-    total,
     `<div class="education-panel" data-reveal>
       <h2 id="scene-title-education" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="body-copy education-panel__intro">${escapeHTML(content.education.intro)}</p>
@@ -277,14 +283,32 @@ function buildExperience(section: (typeof content.nav)[number], index: number, t
     )
     .join("");
 
+  const certifications = content.experience.certifications.length
+    ? `<section class="cert-strip" aria-label="${escapeHTML(content.ui.certificationsLabel)}">
+        <span class="micro-label">${escapeHTML(content.ui.certificationsLabel)}</span>
+        <ul>${content.experience.certifications
+          .map(
+            (entry) => `<li>
+              <span>${escapeHTML(entry.name)}</span>
+              <span class="cert-strip__meta">${escapeHTML(entry.issuer)} · ${escapeHTML(entry.year)}</span>
+              ${
+                entry.href
+                  ? `<a href="${safeHref(entry.href)}" ${externalAttrs(entry.href)}>${escapeHTML(content.ui.openLink)}${icon(isExternal(entry.href) ? "external" : "arrow-right")}</a>`
+                  : ""
+              }
+            </li>`,
+          )
+          .join("")}</ul>
+      </section>`
+    : "";
+
   return makeScene(
     section,
-    index,
-    total,
     `<div class="experience-panel" data-lenis-prevent data-reveal>
       <h2 id="scene-title-experience" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="body-copy experience-panel__intro">${escapeHTML(content.experience.intro)}</p>
       <ol class="experience-list">${entries}</ol>
+      ${certifications}
       <p class="experience-scroll-cue" aria-hidden="true"><span>${escapeHTML(content.ui.scrollExperience)}</span><span>↓</span></p>
     </div>`,
   );
@@ -296,17 +320,14 @@ function buildResume(section: (typeof content.nav)[number], index: number, total
     .join("");
   return makeScene(
     section,
-    index,
-    total,
     `<aside class="resume-side" data-reveal>
       <h2 id="scene-title-resume" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="lead">${escapeHTML(content.resume.intro)}</p>
       <dl class="fact-list fact-list--resume">${facts}</dl>
-      <a class="led-button led-button--solid resume-download" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}">
+      <a class="led-button led-button--solid resume-download" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}" data-event="resume_download">
         <span class="led-button__label">${escapeHTML(content.ui.resumeDownload)}</span>
         ${icon("download", "led-button__icon")}
       </a>
-      <p class="micro-label resume-side__meta">${escapeHTML(content.ui.resumeFormat)}</p>
       <button type="button" class="text-button" data-quick-view>${escapeHTML(content.ui.quickView)} ${icon("arrow-up-right")}</button>
     </aside>`,
   );
@@ -316,7 +337,7 @@ function buildContact(section: (typeof content.nav)[number], index: number, tota
   const links = content.contact.links
     .map(
       (link) => `<li>
-        <a class="contact-link" href="${safeHref(link.href)}" ${externalAttrs(link.href)}>
+        <a class="contact-link" href="${safeHref(link.href)}" ${externalAttrs(link.href)} data-event="contact_click">
           <span class="contact-link__label">${escapeHTML(link.label)}</span>
           <span class="contact-link__value">${escapeHTML(link.value)}</span>
           ${icon(isExternal(link.href) ? "external" : "arrow-up-right", "contact-link__icon")}
@@ -324,17 +345,23 @@ function buildContact(section: (typeof content.nav)[number], index: number, tota
       </li>`,
     )
     .join("");
+  const email = content.contact.links.find((link) => link.href.startsWith("mailto:"));
+  const emailAction = email
+    ? `<a class="led-button led-button--solid contact-email" href="${safeHref(email.href)}" data-event="contact_click">
+        <span class="led-button__label">${escapeHTML(content.ui.emailMe)}</span>
+        ${icon("arrow-up-right", "led-button__icon")}
+      </a>`
+    : "";
   return makeScene(
     section,
-    index,
-    total,
     `<div class="contact-panel" data-reveal>
       <h2 id="scene-title-contact" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="lead">${escapeHTML(content.contact.intro)}</p>
       <p class="micro-label contact-status">${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
       <ul class="contact-list">${links}</ul>
       <div class="contact-panel__actions">
-        <button type="button" class="copy-button" data-copy-email>
+        ${emailAction}
+        <button type="button" class="copy-button" data-copy-email data-event="contact_click">
           ${icon("copy")}
           <span>${escapeHTML(content.ui.copyEmail)}</span>
         </button>
@@ -399,11 +426,11 @@ function buildHeader(): string {
     </a>
     <div class="header-actions">
       <span class="signal"><i aria-hidden="true"></i>${escapeHTML(content.ui.online)}</span>
-      <a class="header-resume" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}" aria-label="${escapeHTML(content.ui.resumeDownload)} (${escapeHTML(content.ui.resumeFormat)})">
+      <a class="header-resume" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}" data-event="resume_download" aria-label="${escapeHTML(content.ui.resumeDownload)} (${escapeHTML(content.ui.resumeFormat)})">
         <span class="header-resume__label">${escapeHTML(content.ui.resumeLabel)}</span>
         ${icon("download", "header-resume__icon")}
       </a>
-      <button type="button" class="quick-button" data-quick-view aria-haspopup="dialog" aria-controls="quickview" aria-label="${escapeHTML(content.ui.quickView)}">
+      <button type="button" class="quick-button" data-quick-view data-event="quick_view_open" aria-haspopup="dialog" aria-controls="quickview" aria-label="${escapeHTML(content.ui.quickView)}">
         <span>${escapeHTML(content.ui.quickView)}</span>
         <span class="quick-button__icon">${icon("arrow-up-right")}</span>
       </button>
@@ -454,10 +481,8 @@ function buildLoader(): string {
   const cells = Array.from({ length: 28 }, () => "<i></i>").join("");
   return `<div class="loader__top">
       <span class="loader__brand">${ledMark()}<span>${escapeHTML(content.brand.name)}</span></span>
-      <span class="loader__coords">${escapeHTML(content.ui.coordinates)}</span>
     </div>
     <div class="loader__edge loader__edge--left" aria-hidden="true">${escapeHTML(content.sceneLabels.loaderEdgeLeft)}</div>
-    <div class="loader__edge loader__edge--right" aria-hidden="true">${escapeHTML(content.sceneLabels.loaderEdgeRight)}</div>
     <div class="loader__bottom">
       <div class="loader__statusline">
         <span class="loader__status" data-loader-status>${escapeHTML(content.loader.statuses[0])}</span>
@@ -468,16 +493,23 @@ function buildLoader(): string {
       </div>
       <div class="loader__foot">
         <span class="micro-label">${escapeHTML(content.ui.loadingShort)}</span>
-        <button type="button" class="loader__quick" data-quick-view>${escapeHTML(content.ui.quickView)} ${icon("arrow-up-right")}</button>
+        <div class="loader__foot-actions">
+          <button type="button" class="loader__skip" data-skip-intro>${escapeHTML(content.ui.skipIntro)}</button>
+          <button type="button" class="loader__quick" data-quick-view data-event="quick_view_open">${escapeHTML(content.ui.quickView)} ${icon("arrow-up-right")}</button>
+        </div>
       </div>
     </div>`;
 }
 
 function renderStaticSections(prefix: string): string {
+  const vignette = (id: SectionId): string =>
+    prefix === "flow"
+      ? `<canvas class="flow-vignette" data-vignette="${id}" width="96" height="96" aria-hidden="true"></canvas>`
+      : "";
   const skills = content.skills.groups
     .map(
       (group) => `<div class="static-skill-group">
-        <h3>${escapeHTML(group.label)}</h3>
+        <h3>${escapeHTML(group.label)} <span>${escapeHTML(group.theme)}</span></h3>
         <ul class="inline-dot-list">${group.items.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}</ul>
       </div>`,
     )
@@ -488,15 +520,24 @@ function renderStaticSections(prefix: string): string {
       const links = project.links
         .map(
           (link) =>
-            `<a class="static-link" href="${safeHref(link.href)}" ${externalAttrs(link.href)}>${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right")}</a>`,
+            `<a class="static-link" href="${safeHref(link.href)}" ${externalAttrs(link.href)} data-event="project_link">${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right")}</a>`,
         )
         .join("");
+      const metrics = project.metrics?.length
+        ? `<div class="metric-chips">${project.metrics
+            .map(
+              (metric) =>
+                `<span class="metric-chip"><strong>${escapeHTML(metric.value)}</strong>${escapeHTML(metric.label)}</span>`,
+            )
+            .join("")}</div>`
+        : "";
       return `<article class="static-project">
         <div class="static-project__index">${String(index + 1).padStart(2, "0")}</div>
         <div class="static-project__body">
           <h3>${escapeHTML(project.title)}</h3>
           <p class="static-project__short">${escapeHTML(project.short)}</p>
           <p>${escapeHTML(project.description)}</p>
+          ${metrics}
           <ul class="tag-list">${tech}</ul>
           <div class="static-project__links">${links}</div>
         </div>
@@ -523,13 +564,17 @@ function renderStaticSections(prefix: string): string {
     .join("");
   const contact = content.contact.links
     .map(
-      (link) => `<li><a class="static-link static-link--large" href="${safeHref(link.href)}" ${externalAttrs(link.href)}><span>${escapeHTML(link.label)}</span><span>${escapeHTML(link.value)}</span></a></li>`,
+      (link) => `<li><a class="static-link static-link--large" href="${safeHref(link.href)}" ${externalAttrs(link.href)} data-event="contact_click"><span>${escapeHTML(link.label)}</span><span>${escapeHTML(link.value)}</span></a></li>`,
     )
     .join("");
+  const email = content.contact.links.find((link) => link.href.startsWith("mailto:"));
+  const emailAction = email
+    ? `<a class="led-button led-button--solid" href="${safeHref(email.href)}" data-event="contact_click"><span class="led-button__label">${escapeHTML(content.ui.emailMe)}</span>${icon("arrow-up-right", "led-button__icon")}</a>`
+    : "";
 
   return `<section class="static-section" id="${prefix}-about">
       <header class="static-section__head">
-        <span class="static-section__index">02</span>
+        ${vignette("about")}
         <div><p class="eyebrow">${escapeHTML(content.nav[1].eyebrow)}</p><h2>${escapeHTML(content.nav[1].title)}</h2></div>
       </header>
       <div class="static-section__content">
@@ -545,7 +590,7 @@ function renderStaticSections(prefix: string): string {
     </section>
     <section class="static-section" id="${prefix}-skills">
       <header class="static-section__head">
-        <span class="static-section__index">03</span>
+        ${vignette("skills")}
         <div><p class="eyebrow">${escapeHTML(content.nav[2].eyebrow)}</p><h2>${escapeHTML(content.nav[2].title)}</h2></div>
       </header>
       <div class="static-section__content">
@@ -555,7 +600,7 @@ function renderStaticSections(prefix: string): string {
     </section>
     <section class="static-section" id="${prefix}-projects">
       <header class="static-section__head">
-        <span class="static-section__index">04</span>
+        ${vignette("projects")}
         <div><p class="eyebrow">${escapeHTML(content.nav[3].eyebrow)}</p><h2>${escapeHTML(content.nav[3].title)}</h2></div>
       </header>
       <div class="static-section__content">
@@ -565,7 +610,7 @@ function renderStaticSections(prefix: string): string {
     </section>
     <section class="static-section" id="${prefix}-education">
       <header class="static-section__head">
-        <span class="static-section__index">05</span>
+        ${vignette("education")}
         <div><p class="eyebrow">${escapeHTML(content.nav[4].eyebrow)}</p><h2>${escapeHTML(content.nav[4].title)}</h2></div>
       </header>
       <div class="static-section__content">
@@ -575,31 +620,43 @@ function renderStaticSections(prefix: string): string {
     </section>
     <section class="static-section" id="${prefix}-experience">
       <header class="static-section__head">
-        <span class="static-section__index">06</span>
+        ${vignette("experience")}
         <div><p class="eyebrow">${escapeHTML(content.nav[5].eyebrow)}</p><h2>${escapeHTML(content.nav[5].title)}</h2></div>
       </header>
       <div class="static-section__content">
         <p class="lead">${escapeHTML(content.experience.intro)}</p>
         <ol class="static-entry-list">${experience}</ol>
+        ${
+          content.experience.certifications.length
+            ? `<section class="cert-strip" aria-label="${escapeHTML(content.ui.certificationsLabel)}">
+                <span class="micro-label">${escapeHTML(content.ui.certificationsLabel)}</span>
+                <ul>${content.experience.certifications
+                  .map(
+                    (entry) =>
+                      `<li><span>${escapeHTML(entry.name)}</span><span class="cert-strip__meta">${escapeHTML(entry.issuer)} · ${escapeHTML(entry.year)}</span></li>`,
+                  )
+                  .join("")}</ul>
+              </section>`
+            : ""
+        }
       </div>
     </section>
     <section class="static-section" id="${prefix}-resume">
       <header class="static-section__head">
-        <span class="static-section__index">07</span>
+        ${vignette("resume")}
         <div><p class="eyebrow">${escapeHTML(content.nav[6].eyebrow)}</p><h2>${escapeHTML(content.nav[6].title)}</h2></div>
       </header>
       <div class="static-section__content static-resume">
         <p class="lead">${escapeHTML(content.resume.intro)}</p>
         <dl class="fact-list">${content.resume.facts.map((fact) => `<div><dt>${escapeHTML(fact.label)}</dt><dd>${escapeHTML(fact.value)}</dd></div>`).join("")}</dl>
-        <a class="led-button led-button--solid" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}">
+        <a class="led-button led-button--solid" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}" data-event="resume_download">
           <span class="led-button__label">${escapeHTML(content.ui.resumeDownload)}</span>${icon("download", "led-button__icon")}
         </a>
-        <p class="micro-label">${escapeHTML(content.ui.resumeFormat)}</p>
       </div>
     </section>
     <section class="static-section" id="${prefix}-contact">
       <header class="static-section__head">
-        <span class="static-section__index">08</span>
+        ${vignette("contact")}
         <div><p class="eyebrow">${escapeHTML(content.nav[7].eyebrow)}</p><h2>${escapeHTML(content.nav[7].title)}</h2></div>
       </header>
       <div class="static-section__content">
@@ -607,7 +664,8 @@ function renderStaticSections(prefix: string): string {
         <p class="micro-label contact-status">${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
         <ul class="static-contact-list">${contact}</ul>
         <div class="static-contact__actions">
-          <button type="button" class="copy-button" data-copy-email>
+          ${emailAction}
+          <button type="button" class="copy-button" data-copy-email data-event="contact_click">
             ${icon("copy")}
             <span>${escapeHTML(content.ui.copyEmail)}</span>
           </button>
@@ -638,7 +696,7 @@ function buildQuickView(): string {
         <p class="quickview__tagline">${escapeHTML(content.identity.tagline)}</p>
         <p class="quickview__intro">${escapeHTML(content.ui.quickViewIntro)}</p>
         <div class="quickview__actions">
-          <a class="led-button led-button--solid" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}">
+          <a class="led-button led-button--solid" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}" data-event="resume_download">
             <span class="led-button__label">${escapeHTML(content.ui.resumeDownload)}</span>${icon("download", "led-button__icon")}
           </a>
           <button type="button" class="text-button" data-close-quick>${escapeHTML(content.ui.quickViewExit)}${icon("arrow-left")}</button>
@@ -668,10 +726,9 @@ function buildMobileFlow(): string {
         <p class="flow-hero__availability"><i aria-hidden="true"></i>${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
         <div class="flow-hero__actions">
           <button type="button" class="led-button led-button--solid" data-goto="projects"><span class="led-button__label">${escapeHTML(content.ui.viewWork)}</span>${icon("arrow-right", "led-button__icon")}</button>
-          <button type="button" class="text-button" data-quick-view>${escapeHTML(content.ui.quickView)}${icon("arrow-up-right")}</button>
+          <button type="button" class="text-button" data-quick-view data-event="quick_view_open">${escapeHTML(content.ui.quickView)}${icon("arrow-up-right")}</button>
         </div>
       </div>
-      <div class="flow-hero__scroll"><span class="scroll-cue__line" aria-hidden="true"></span>${escapeHTML(content.ui.scroll)}</div>
     </section>
     <div class="flow-document">
       ${renderStaticSections("flow")}

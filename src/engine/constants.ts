@@ -9,7 +9,7 @@ export const QUALITY_TIERS = {
     label: "HIGH",
     points: 150016,
     rows: 293,
-    dpr: 2,
+    dpr: 1.5,
     targetFps: 60,
   },
   medium: {
@@ -28,10 +28,20 @@ export const QUALITY_TIERS = {
     dpr: 1,
     targetFps: 30,
   },
+  lite: {
+    name: "lite" as const,
+    label: "LITE",
+    points: 4096,
+    rows: 8,
+    dpr: 1,
+    targetFps: 30,
+  },
 } as const;
 
 export type QualityName = keyof typeof QUALITY_TIERS;
 export type QualityTier = (typeof QUALITY_TIERS)[QualityName];
+
+export const MIN_POINTS = QUALITY_TIERS.lite.points;
 
 export const isCoarsePointer = (): boolean =>
   typeof window !== "undefined" &&

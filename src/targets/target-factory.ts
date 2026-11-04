@@ -17,6 +17,7 @@ const REFERENCE_FILES: Record<string, string> = {
 
 const references = new Map<string, HTMLCanvasElement>();
 let referencePromise: Promise<void> | null = null;
+let goldLayer: CanvasRenderingContext2D | null = null;
 
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -263,6 +264,43 @@ function drawRing(
   ctx.restore();
 }
 
+function paintGoldPaths(ctx: CanvasRenderingContext2D, artwork: Artwork): void {
+  if (!artwork.gold?.length) return;
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.setLineDash([]);
+  for (const p of artwork.gold) {
+    const path = new Path2D(p.d);
+    ctx.globalAlpha = p.alpha ?? 1;
+    if (p.fill) {
+      ctx.fill(path);
+    } else {
+      ctx.globalAlpha = p.stroke?.alpha ?? 1;
+      ctx.setLineDash(p.stroke?.dash ?? []);
+      ctx.lineWidth = p.stroke?.width ?? 4;
+      ctx.stroke(path);
+    }
+  }
+  ctx.restore();
+}
+
+function paintGoldLayer(
+  artwork: Artwork,
+  centerX: number,
+  centerY: number,
+  s: number,
+): void {
+  if (!goldLayer || !artwork.gold?.length) return;
+  const g = goldLayer;
+  g.save();
+  g.translate(centerX - (artwork.width * s) / 2, centerY - (artwork.height * s) / 2);
+  g.scale(s, s);
+  g.lineCap = "round";
+  g.lineJoin = "round";
+  paintGoldPaths(g, artwork);
+  g.restore();
+}
+
 function drawArtwork(
   ctx: CanvasRenderingContext2D,
   artwork: Artwork,
@@ -292,7 +330,9 @@ function drawArtwork(
       drawW,
       drawH,
     );
+    paintGoldPaths(ctx, artwork);
     ctx.restore();
+    paintGoldLayer(artwork, centerX, centerY, s);
     return;
   }
 
@@ -329,7 +369,12 @@ function drawArtwork(
   ctx.globalAlpha = 1;
   ctx.setLineDash([]);
   artwork.drawExtra?.(ctx);
+  paintGoldPaths(ctx, artwork);
   ctx.restore();
+
+  // Gold pixels are also painted into the mask canvas so the target cloud can
+  // tag them and the render shader can shift only those particles warm.
+  paintGoldLayer(artwork, centerX, centerY, s);
 }
 
 function measureTracked(
@@ -500,8 +545,6 @@ function drawHome(d: DrawContext): void {
   drawArtwork(ctx, artworks.hatSkull, w * 0.25, h * 0.62, artSize, artSize);
   drawOrbit(ctx, w * 0.25, h * 0.62, artSize * 0.56, artSize * 0.56, -0.18);
   drawMapRoute(ctx, [w * 0.39, h * 0.72], [w * 0.32, h * 0.83], [w * 0.14, h * 0.85], [2, 16]);
-  drawMicroType(ctx, content.sceneLabels.homeLog, w * 0.25, h * 0.88, 11, "center");
-  drawMicroType(ctx, content.sceneLabels.homeRoute, w * 0.46, h * 0.72, 10, "left");
 
   // The particle name lives in its own band above the skull, clear of the
   // headline on the right-hand side of the stage.
@@ -510,7 +553,6 @@ function drawHome(d: DrawContext): void {
     maxWidth: w * 0.5,
     tracking: nameSize * 0.02,
   });
-  drawMicroType(ctx, content.sceneLabels.homeKicker, w * 0.44, h * 0.34, 11, "center");
 }
 
 function drawAbout(d: DrawContext): void {
@@ -559,7 +601,7 @@ function drawProjects(d: DrawContext): void {
     return;
   }
   const titleSize = clamp(w * 0.049, 50, 88);
-  drawTracked(ctx, title, w * 0.35, h * 0.25, titleSize, { maxWidth: w * 0.5, tracking: titleSize * 0.018 });
+  drawTracked(ctx, title, w * 0.31, h * 0.25, titleSize, { maxWidth: w * 0.46, tracking: titleSize * 0.018 });
 
   drawMapRoute(ctx, [w * 0.075, h * 0.79], [w * 0.12, h * 0.44], [w * 0.54, h * 0.43], [2, 16]);
   drawMapRoute(ctx, [w * 0.075, h * 0.79], [w * 0.15, h * 0.58], [w * 0.44, h * 0.67], [1, 22]);
@@ -572,7 +614,6 @@ function drawProjects(d: DrawContext): void {
   drawSparseRoute(ctx, w, h, 0.372, 0.56, 0.52, 0.43);
   drawArtwork(ctx, artworks.compassRose, w * 0.53, h * 0.74, w * 0.12, w * 0.12);
   drawArtwork(ctx, artworks.ship, w * 0.32, h * 0.61, w * 0.35, h * 0.28);
-  drawMicroType(ctx, content.sceneLabels.projectsFoot, w * 0.52, h * 0.84, 11, "center");
 }
 
 function drawSparseRoute(
@@ -667,7 +708,6 @@ function drawEducation(d: DrawContext): void {
   }
   drawArtwork(ctx, artworks.book, w * 0.65, h * 0.6, w * 0.31, h * 0.42);
   drawOrbit(ctx, w * 0.65, h * 0.6, w * 0.2, h * 0.24, -0.12);
-  drawMicroType(ctx, content.sceneLabels.educationKicker, w * 0.65, h * 0.86, 11, "center");
 }
 
 function drawExperience(d: DrawContext): void {
@@ -682,14 +722,15 @@ function drawExperience(d: DrawContext): void {
   drawTracked(ctx, title, w * 0.305, h * 0.235, titleSize, { maxWidth: w * 0.44 });
   drawArtwork(ctx, artworks.chart, w * 0.305, h * 0.6, w * 0.45, h * 0.41);
   drawOrbit(ctx, w * 0.305, h * 0.6, w * 0.25, h * 0.22, 0.18);
-  drawMicroType(ctx, content.sceneLabels.experienceKicker, w * 0.305, h * 0.86, 11, "center");
 }
 
 function drawResume(d: DrawContext): void {
   const { ctx, width: w, height: h, mobile } = d;
   const frameW = mobile ? w * 0.65 : Math.min(w * 0.34, h * 0.61);
   const frameH = mobile ? h * 0.45 : Math.min(h * 0.7, w * 0.61);
-  const cx = mobile ? w * 0.5 : w * 0.44;
+  // Keep the poster clear of the readable resume panel on the right.
+  const rightReserve = Math.min(w * 0.34, 450) + Math.max(w * 0.16, 230);
+  const cx = mobile ? w * 0.5 : Math.max(frameW * 0.5 + 48, Math.min(w * 0.44, w - rightReserve - frameW * 0.5));
   const cy = mobile ? h * 0.35 : h * 0.49;
   drawArtwork(ctx, artworks.wantedFrame, cx, cy, frameW, frameH);
 
@@ -722,6 +763,28 @@ function drawResume(d: DrawContext): void {
       tracking: mobile ? 1 : 2,
     },
   );
+  // Bounty line built only from figures already used in the project copy.
+  const bountySize = mobile ? clamp(posterW * 0.062, 13, 18) : clamp(posterW * 0.052, 15, 22);
+  drawTracked(ctx, content.resume.bounty, cx, cy + posterH * 0.37, bountySize, {
+    maxWidth: posterW * 0.7,
+    weight: 640,
+    tracking: bountySize * 0.08,
+  });
+  if (goldLayer) {
+    const accentY = cy - posterH * 0.225;
+    goldLayer.save();
+    goldLayer.lineWidth = Math.max(2, posterW * 0.008);
+    goldLayer.beginPath();
+    goldLayer.moveTo(cx - posterW * 0.18, accentY);
+    goldLayer.lineTo(cx + posterW * 0.18, accentY);
+    goldLayer.stroke();
+    goldLayer.restore();
+    drawTracked(goldLayer, content.resume.bounty, cx, cy + posterH * 0.37, bountySize, {
+      maxWidth: posterW * 0.7,
+      weight: 640,
+      tracking: bountySize * 0.08,
+    });
+  }
   drawOrbit(ctx, cx, cy, frameW * 0.66, frameH * 0.6, 0.06);
 }
 
@@ -739,7 +802,6 @@ function drawContact(d: DrawContext): void {
   drawArtwork(ctx, artworks.laughTaleX, w * 0.305, h * 0.59, artSize, artSize);
   drawOrbit(ctx, w * 0.305, h * 0.59, artSize * 0.66, artSize * 0.52, -0.12);
   drawOrbit(ctx, w * 0.305, h * 0.59, artSize * 0.78, artSize * 0.63, 0.28);
-  drawMicroType(ctx, content.sceneLabels.contactFoot, w * 0.305, h * 0.85, 11, "center");
 }
 
 function drawOnePiece(d: DrawContext): void {
@@ -834,10 +896,10 @@ function collectCandidates(
       const pixel = (row + x) >>> 0;
 
       if (edgeScore > 30) {
-        const weight = clamp(0.72 + (edgeScore / 255) * 0.34, 0.72, 1);
+        const weight = clamp(0.8 + (edgeScore / 255) * 0.2, 0.8, 1);
         edge.push(pixel | ((Math.round(weight * 255) & 0xff) << 24));
       } else {
-        const weight = clamp(0.28 + (alpha / 255) * 0.16, 0.28, 0.46);
+        const weight = clamp(0.6 + (alpha / 255) * 0.18, 0.6, 0.78);
         fill.push(pixel | ((Math.round(weight * 255) & 0xff) << 24));
       }
     }
@@ -865,13 +927,21 @@ export async function makeTargetCloud(id: TargetId, reducedMotion = false): Prom
     scale = Math.sqrt(maxPixels / (width * height));
   }
   const { canvas, ctx } = makeCanvas(width, height, scale);
+  const gold = makeCanvas(width, height, scale);
   const drawContext: DrawContext = { ctx, width, height, scale, mobile, reducedMotion };
   applyCtxTransform(ctx, drawContext);
-  drawSparseDust(ctx, width, height, id.length * 997 + width, mobile);
-  drawComposition(id, drawContext);
+  applyCtxTransform(gold.ctx, drawContext);
+  goldLayer = gold.ctx;
+  try {
+    drawSparseDust(ctx, width, height, id.length * 997 + width, mobile);
+    drawComposition(id, drawContext);
+  } finally {
+    goldLayer = null;
+  }
 
   const step = 2;
   const pools = collectCandidates(ctx, canvas.width, canvas.height, step);
+  const goldPixels = gold.ctx.getImageData(0, 0, gold.canvas.width, gold.canvas.height).data;
   const random = makeRandom(0x1ed + id.length * 1907 + width);
   const data = new Float32Array(MAX_POINTS * TARGET_STRIDE);
   const edgeCount = pools.edge.length;
@@ -882,30 +952,34 @@ export async function makeTargetCloud(id: TargetId, reducedMotion = false): Prom
   for (let i = 0; i < MAX_POINTS; i += 1) {
     let px: number;
     let py: number;
-    let weight = 0.4;
+    let weight = 0.7;
+    let pixel = -1;
     if (fallback) {
       px = random() * canvas.width;
       py = random() * canvas.height;
     } else {
-      const fromEdge = useEdges && (fillCount === 0 || random() < 0.8);
+      const fromEdge = useEdges && (fillCount === 0 || random() < 0.6);
       const pool = fromEdge ? pools.edge : pools.fill;
       const encoded = pool[Math.floor(random() * pool.length)] || 0;
-      const pixel = encoded & 0xffffff;
+      pixel = encoded & 0xffffff;
       weight = ((encoded >>> 24) & 0xff) / 255;
       px = (pixel % canvas.width) + (random() - 0.5) * step * 0.98;
       py = Math.floor(pixel / canvas.width) + (random() - 0.5) * step * 0.98;
     }
+    const isGold = pixel >= 0 && goldPixels[pixel * 4 + 3] > 44;
     const x = px / scale - width / 2;
     const y = height / 2 - py / scale;
     const z = (random() * 2 - 1) * 34 + Math.sin(x * 0.008) * 8;
     data[i * 4] = x;
     data[i * 4 + 1] = y;
     data[i * 4 + 2] = z;
-    data[i * 4 + 3] = weight;
+    data[i * 4 + 3] = isGold ? -weight : weight;
   }
 
   canvas.width = 1;
   canvas.height = 1;
+  gold.canvas.width = 1;
+  gold.canvas.height = 1;
 
   return {
     id,

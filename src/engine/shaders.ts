@@ -243,7 +243,10 @@ export const ledVertexShader = /* glsl */ `
     float depth = clamp((led.z + 55.0) / 110.0, 0.0, 1.0);
     // Alpha in the target texture carries a per-point edge weight. Outline
     // points burn brighter and slightly larger; interior fill stays soft.
-    float edgeWeight = texture2D(uTargets, ref).a;
+    // A negative alpha tags that point as a gold accent.
+    float targetAlpha = texture2D(uTargets, ref).a;
+    float edgeWeight = abs(targetAlpha);
+    float gold = step(0.001, -targetAlpha);
 
     float motion = 1.0 - uReducedMotion * 0.8;
 
@@ -284,11 +287,14 @@ export const ledVertexShader = /* glsl */ `
     color = mix(color, mid, smoothstep(0.5, 1.0, seed) * 0.68);
     color = mix(color, core, twinkle * 0.31 + depth * 0.2 + near * 0.55 + sparkle * 0.45);
     color = mix(color, mid, edgeWeight * 0.16);
+    vec3 goldLow = vec3(0.72, 0.47, 0.09);
+    vec3 goldHigh = vec3(1.0, 0.84, 0.35);
+    color = mix(color, mix(goldLow, goldHigh, 0.45 + twinkle * 0.55), gold);
     color *= shapeGlow;
 
     float size = mix(1.55, 3.25, seed) * (0.74 + depth * 0.78);
     size *= mix(0.8, 1.16, edgeWeight);
-    size *= 1.0 + near * 1.1 + sparkle * 1.2;
+    size *= 1.0 + near * 1.1 + sparkle * 1.2 + gold * 0.16;
     size *= uPixelBoost;
     gl_PointSize = clamp(size * uDPR, 1.0, 38.0);
 

@@ -10,7 +10,13 @@ import {
 import { initCursor, type CursorController } from "./ui/cursor";
 import { initWorldMap } from "./ui/world-map";
 import { initQuickView, type QuickViewController } from "./ui/quickview";
-import { isCoarsePointer, prefersReducedMotion } from "./engine/constants";
+import { initAnalytics, trackEvent } from "./ui/analytics";
+import { initVignettes } from "./ui/vignettes";
+import {
+  isCoarsePointer,
+  prefersReducedMotion,
+  type QualityName,
+} from "./engine/constants";
 import type { EngineStats, LEDEngine } from "./engine/engine";
 import type { StoryController } from "./scroll/story";
 import type { TargetCloud } from "./targets/target-factory";
@@ -35,7 +41,10 @@ let failed = false;
 const stageClouds = new Map<SectionId, TargetCloud>();
 const targetCache = new Map<string, TargetCloud>();
 let finalWordTimer = 0;
+const particleEffects = !reducedMotion && !narrow;
 
+initAnalytics(content.analytics);
+initVignettes();
 initWorldMap(reducedMotion);
 
 cursor = initCursor({
@@ -43,14 +52,85 @@ cursor = initCursor({
   onMove: (x, y) => engine?.setPointer(x, y),
   onLeave: () => engine?.clearPointer(),
   onPress: (x, y) => {
-    if (!quickView?.isOpen()) engine?.burstAtScreen(x, y, 1900);
+    if (particleEffects && !quickView?.isOpen()) engine?.burstAtScreen(x, y, 1900);
   },
   onRipple: (x, y, strength) => {
-    if (!quickView?.isOpen()) engine?.addRipple(x, y, strength);
+    if (!reducedMotion && !quickView?.isOpen()) engine?.addRipple(x, y, strength);
   },
 });
 
+let slowToast: HTMLElement | null = null;
+let slowFpsSeconds = 0;
+let slowToastDismissed = false;
+let slowToastVisible = false;
+
+const ensureSlowToast = (): HTMLElement => {
+  if (slowToast) return slowToast;
+  const root = document.createElement("aside");
+  root.className = "slow-toast";
+  root.hidden = true;
+  root.setAttribute("role", "status");
+  root.setAttribute("aria-live", "polite");
+
+  const copy = document.createElement("p");
+  copy.className = "slow-toast__copy";
+  copy.textContent = content.ui.slowToast;
+
+  const actions = document.createElement("div");
+  actions.className = "slow-toast__actions";
+
+  const quick = document.createElement("button");
+  quick.type = "button";
+  quick.className = "slow-toast__action";
+  quick.dataset.quickView = "";
+  quick.dataset.event = "quick_view_open";
+  quick.textContent = content.ui.quickView;
+  quick.addEventListener("click", () => hideSlowToast());
+
+  const dismiss = document.createElement("button");
+  dismiss.type = "button";
+  dismiss.className = "slow-toast__dismiss";
+  dismiss.textContent = content.ui.close;
+  dismiss.addEventListener("click", () => {
+    slowToastDismissed = true;
+    slowFpsSeconds = 0;
+    hideSlowToast();
+  });
+
+  actions.append(quick, dismiss);
+  root.append(copy, actions);
+  document.body.append(root);
+  slowToast = root;
+  return root;
+};
+
+const hideSlowToast = (): void => {
+  if (!slowToast) return;
+  slowToast.classList.remove("is-visible");
+  slowToast.hidden = true;
+  slowToastVisible = false;
+};
+
+const showSlowToast = (): void => {
+  if (slowToastDismissed || slowToastVisible) return;
+  const element = ensureSlowToast();
+  slowToastVisible = true;
+  element.hidden = false;
+  window.requestAnimationFrame(() => element.classList.add("is-visible"));
+};
+
+const handleLowFps = (fps: number): void => {
+  if (!bootComplete || failed || slowToastDismissed || slowToastVisible) return;
+  if (fps > 0 && fps < 24) {
+    slowFpsSeconds += 1;
+    if (slowFpsSeconds >= 3) showSlowToast();
+  } else {
+    slowFpsSeconds = 0;
+  }
+};
+
 const onQuickOpen = (): void => {
+  hideSlowToast();
   cursor?.setActive(false);
   story?.pause();
   engine?.pause("quickview");
@@ -161,29 +241,33 @@ const markContactCloud = (): void => {
 
 const triggerEgg = async (egg: string, element: HTMLElement): Promise<void> => {
   if (egg === "hat") {
-    const bounds = element.getBoundingClientRect();
-    engine?.burstAtScreen(
-      bounds.left + bounds.width / 2,
-      bounds.top + bounds.height / 2,
-      7600,
-    );
+    if (particleEffects) {
+      const bounds = element.getBoundingClientRect();
+      engine?.burstAtScreen(
+        bounds.left + bounds.width / 2,
+        bounds.top + bounds.height / 2,
+        7600,
+      );
+    }
     showToast(ui, content.easterEggs.hatToast);
     return;
   }
   if (egg === "ship") {
-    engine?.surge(760);
+    if (particleEffects) engine?.surge(760);
     showToast(ui, content.easterEggs.shipToast);
     return;
   }
   if (egg === "mark") {
     window.clearTimeout(finalWordTimer);
     showToast(ui, content.easterEggs.markToast);
-    const cloud = await getOnePieceCloud();
-    if (cloud) engine?.morphTo(cloud);
+    if (particleEffects) {
+      const cloud = await getOnePieceCloud();
+      if (cloud) engine?.morphTo(cloud);
+      finalWordTimer = window.setTimeout(() => {
+        markContactCloud();
+      }, 5600);
+    }
     showToast(ui, content.easterEggs.finalWord, 5600);
-    finalWordTimer = window.setTimeout(() => {
-      markContactCloud();
-    }, 5600);
   }
 };
 
@@ -210,6 +294,8 @@ const showFallback = (error?: unknown): void => {
 };
 
 const finishLoader = (): void => {
+  if (loaderFinished) return;
+  loaderFinished = true;
   setLoaderProgress(ui, 100, content.ui.enter);
   app?.setAttribute("aria-busy", "false");
   window.setTimeout(() => {
@@ -226,16 +312,28 @@ const finishLoader = (): void => {
   }, 240);
 };
 
+let loaderFinished = false;
+let loaderSkipRequested = reducedMotion;
+let loaderWaitResolve: (() => void) | null = null;
+
+const requestLoaderSkip = (): void => {
+  if (failed || loaderFinished) return;
+  loaderSkipRequested = true;
+  setLoaderProgress(ui, 100, content.ui.enter);
+  loaderWaitResolve?.();
+  loaderWaitResolve = null;
+};
+
 const boot = async (): Promise<void> => {
   const started = performance.now();
   setLoaderProgress(ui, 2, content.loader.statuses[0]);
 
-  let quality: "high" | "medium" | "low" = narrow ? "low" : "medium";
+  let quality: QualityName = narrow ? "lite" : "medium";
   try {
     const { chooseQualityTier } = await import("./engine/quality");
     quality = await chooseQualityTier();
   } catch {
-    quality = narrow ? "low" : "medium";
+    quality = narrow ? "lite" : "medium";
   }
   setLoaderProgress(ui, 7, content.loader.statuses[0]);
 
@@ -258,6 +356,7 @@ const boot = async (): Promise<void> => {
             points: stats.points,
             fps: stats.fps,
           });
+          handleLowFps(stats.fps);
         },
         onQuality: (stats: EngineStats) => {
           setEngineReadout(ui, {
@@ -278,6 +377,14 @@ const boot = async (): Promise<void> => {
       event.preventDefault();
       showFallback(new Error("WebGL context lost."));
     });
+
+    if (narrow) {
+      const hero = document.getElementById("flow-home");
+      if (hero) engine.observeVisibility(hero);
+    } else {
+      const stage = document.getElementById("stage-root");
+      if (stage) engine.observeVisibility(stage);
+    }
 
     const loaderCloud = await factory.makeTargetCloud("loader", reducedMotion);
     targetCache.set("loader", loaderCloud);
@@ -306,8 +413,16 @@ const boot = async (): Promise<void> => {
       }
     }
 
-    const wait = Math.max(0, MAX_LOADER_WAIT - (performance.now() - started));
-    if (wait > 0) await new Promise<void>((resolve) => window.setTimeout(resolve, wait));
+    if (!loaderSkipRequested) {
+      const wait = Math.max(0, MAX_LOADER_WAIT - (performance.now() - started));
+      if (wait > 0) {
+        await new Promise<void>((resolve) => {
+          loaderWaitResolve = resolve;
+          window.setTimeout(resolve, wait);
+        });
+        loaderWaitResolve = null;
+      }
+    }
 
     if (!narrow) {
       const { initStory } = await import("./scroll/story");
@@ -323,19 +438,6 @@ const boot = async (): Promise<void> => {
         },
       });
     } else {
-      const hero = document.getElementById("flow-home");
-      if (hero && engine) {
-        const observer = new IntersectionObserver(
-          (entries) => {
-            for (const entry of entries) {
-              if (entry.isIntersecting) engine?.resume("mobile-hero");
-              else engine?.pause("mobile-hero");
-            }
-          },
-          { threshold: 0.04 },
-        );
-        observer.observe(hero);
-      }
       if (initial !== "home") {
         window.setTimeout(() => scrollToStaticSection(initial), 80);
       }
@@ -351,6 +453,15 @@ const boot = async (): Promise<void> => {
 document.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof Element)) return;
+
+  const tracked = target.closest<HTMLElement>("[data-event]");
+  if (tracked?.dataset.event) trackEvent(tracked.dataset.event);
+
+  if (target.closest("[data-skip-intro]")) {
+    event.preventDefault();
+    requestLoaderSkip();
+    return;
+  }
 
   const goto = target.closest<HTMLElement>("[data-goto], [data-goto-nav]");
   if (goto) {
@@ -386,6 +497,12 @@ document.addEventListener("click", (event) => {
     event.preventDefault();
     void copyEmail();
   }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || loaderFinished || failed) return;
+  if (quickView?.isOpen()) return;
+  requestLoaderSkip();
 });
 
 const modeQuery = window.matchMedia("(max-width: 879px)");

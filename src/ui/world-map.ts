@@ -41,13 +41,6 @@ const MAP_SVG = `
     <rect x="1550" y="28" width="14" height="944" fill="url(#wm-ticks-y)" />
   </g>
 
-  <g class="wm-coords">
-    <text x="80" y="19">N 23° 20'</text>
-    <text x="800" y="19" text-anchor="middle">THE GRAND LINE · CHART 001</text>
-    <text x="1520" y="19" text-anchor="end">E 85° 19'</text>
-    <text x="80" y="991">LOG POSE / TRUE NORTH</text>
-    <text x="1520" y="991" text-anchor="end">SCALE / UNKNOWN</text>
-  </g>
 
   <g class="wm-sea">
     <ellipse class="wm-line wm-line--bright" cx="800" cy="500" rx="470" ry="330" />
@@ -71,9 +64,6 @@ const MAP_SVG = `
   <g class="wm-grandline">
     <use class="wm-line wm-line--bright" href="#wm-grand-path" />
     <use class="wm-line wm-line--faint wm-dash wm-offset" href="#wm-grand-path" />
-    <text class="wm-label wm-label--track">
-      <textPath href="#wm-grand-path" startOffset="57%">GRAND LINE</textPath>
-    </text>
   </g>
 
   <g class="wm-routes">
@@ -117,7 +107,6 @@ const MAP_SVG = `
       <path class="map-island__contour" transform="rotate(24)" d="M-14-4c3-6 9-9 15-7 6 2 9 7 8 13-1 5-7 9-13 8-6-1-11-6-11-12 0-1 0-1 1-2Z" />
       <circle class="map-island__ring" r="8" />
       <circle class="map-island__dot" r="2.4" />
-      <text class="map-island__label" x="38" y="3">GRAND LINE</text>
     </g>
 
     <g class="map-island" data-map-stage="education" transform="translate(600 430)">
@@ -163,18 +152,6 @@ const MAP_SVG = `
     </g>
   </g>
 
-  <g class="wm-compass" transform="translate(230 210)">
-    <circle class="wm-line wm-line--bright" r="54" />
-    <circle class="wm-line wm-line--faint wm-dash" r="42" />
-    <path class="wm-line wm-line--faint" d="M0-66V-58M0 58V66M-66 0H-58M58 0H66" />
-    <path class="wm-line wm-line--bright" d="M0-52 11-11 52 0 11 11 0 52-11 11-52 0-11-11Z" />
-    <path class="wm-line wm-line--faint" d="M0-38 8-8 38 0 8 8 0 38-8 8-38 0-8-8Z" />
-    <circle class="wm-line" r="4" />
-    <text class="wm-label wm-compass__label" x="0" y="-72" text-anchor="middle">N</text>
-    <text class="wm-label wm-compass__label" x="72" y="3">E</text>
-    <text class="wm-label wm-compass__label" x="0" y="82" text-anchor="middle">S</text>
-    <text class="wm-label wm-compass__label" x="-72" y="3" text-anchor="end">W</text>
-  </g>
 
   <g class="wm-stars">
     <use href="#wm-star" x="300" y="310" width="12" height="12" />

@@ -11,7 +11,7 @@ A One Piece–inspired portfolio for **Abhed Srivastava**, focused on data engin
 - **Navigation:** chapter links and section dots track the journey. Chapters can also be opened directly through a URL.
 - **Mobile edition:** screens narrower than 880px, or devices with a coarse pointer, use a document layout with a particle hero. The hero simulation pauses when it leaves view.
 - **Quick View:** a native dialog presents the complete portfolio without requiring the particle engine.
-- **Adaptive rendering:** GPU benchmarking selects a quality tier, with runtime downgrades when performance drops.
+- **Adaptive rendering:** GPU benchmarking selects a quality tier; when frame time stays high, the active particle budget drops in 30% steps and never increases again.
 - **Motion and atmosphere:** an SVG world map, cursor ripples, particle repulsion, shape-specific idle motion and three hidden interactions.
 - **Readable fallback:** if WebGL initialization fails or its context is lost, the site switches to the document edition.
 
@@ -78,7 +78,7 @@ The primary content source is [`src/content.ts`](src/content.ts). It currently c
 | `meta`                                          | Runtime page metadata                                     |
 | `brand`, `identity`                             | Site branding, name, role, biography and availability     |
 | `nav`                                           | Chapter labels and particle titles                        |
-| `sceneLabels`, `sceneNotes`                     | Particle microtype and decorative margin notes            |
+| `sceneLabels`                                   | Particle microtype                                        |
 | `ui`, `loader`                                  | Interface labels, loading messages and fallback copy      |
 | `skills`, `projects`, `education`, `experience` | Portfolio entries and readable layouts                    |
 | `resume`                                        | PDF URL, download filename and summary facts              |
@@ -90,7 +90,7 @@ When adapting the site:
 1. Update the content and verify every claim and contact link. Project links currently point to a GitHub profile; replace them with individual repositories or demos as appropriate.
 2. Keep existing chapter IDs unless you also update the associated types, layouts and target-generation logic.
 3. Update the static title, description, Open Graph and Twitter tags in [`index.html`](index.html) alongside `content.meta`, so the initial HTML and share metadata match.
-4. Review decorative copy in [`src/ui/world-map.ts`](src/ui/world-map.ts) if changing the theme or coordinates; not every decorative label comes from the content module.
+4. Review decorative map labels and geometry in [`src/ui/world-map.ts`](src/ui/world-map.ts) if changing the theme; not every decorative label comes from the content module.
 5. Replace or regenerate the public assets, then rebuild.
 
 ### Public assets
@@ -155,11 +155,12 @@ Engine and target-generation modules are dynamically imported. Chapter targets a
 
 | Tier   |  Points | Active simulation rows | DPR cap |
 | ------ | ------: | ---------------------: | ------: |
-| high   | 150,016 |                    293 |       2 |
+| high   | 150,016 |                    293 |     1.5 |
 | medium |  65,024 |                    127 |     1.5 |
 | low    |  16,384 |                     32 |       1 |
+| lite   |   4,096 |                      8 |       1 |
 
-Mobile/coarse-pointer devices default to low quality. Desktop selection uses a short GPU benchmark and device hints; detected software renderers also default to low. Automatic quality adjustment can downgrade the tier during use.
+Mobile/coarse-pointer devices and low-memory devices default to lite quality. Desktop selection uses a short GPU benchmark and device hints; detected software renderers default to low. Adaptive quality never changes the named tier, but it reduces the active point budget during use and never restores it.
 
 For repeatable captures or troubleshooting, force a tier:
 
