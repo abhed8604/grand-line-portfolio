@@ -7,7 +7,7 @@ A One Piece–inspired portfolio for **Abhed Srivastava**, focused on data engin
 ## Features
 
 - **Desktop voyage:** a fixed WebGL particle canvas morphs between Home, About, Skills, Projects, Education, Experience, Résumé and Contact.
-- **Interactive projects:** selectable islands and project rows open a readable detail panel while the particle field becomes a project frame.
+- **Interactive projects:** selectable islands and project rows open a text-first detail panel with Problem, Approach, Result, Stack and links.
 - **Navigation:** chapter links and section dots track the journey. Chapters can also be opened directly through a URL.
 - **Mobile edition:** screens narrower than 880px, or devices with a coarse pointer, use a document layout with a particle hero. The hero simulation pauses when it leaves view.
 - **Quick View:** a native dialog presents the complete portfolio without requiring the particle engine.
@@ -67,35 +67,39 @@ npm run preview
 | `npm run quick-check` | Capture selected layouts, mobile and the no-WebGL fallback; log browser diagnostics                          |
 | `npm run qa`          | Capture desktop chapters at three sizes, plus loader, Quick View, reduced-motion, mobile and fallback states |
 | `npm run interaction-check` | Run assertion-based browser checks for navigation, project details, Quick View, copy and layout collisions |
+| `npm run check:resume` | Build, then verify every number and date in Quick View against `RESUME_SOURCE`              |
+| `npm run resume:pdf`  | Regenerate `public/resume.pdf` from the canonical November 2026 resume source               |
 | `npm run og`          | Capture the live hero as `public/og.png` at 1200 × 630                                                       |
 
 ## Content and customization
 
-The primary content source is [`src/content.ts`](src/content.ts). It currently contains Abhed's identity, education, skills, projects, experience and contact links—not an unfilled portfolio template.
+The canonical fact source is [`src/resume.ts`](src/resume.ts). Its `RESUME_SOURCE` block is the November 2026 resume text; `resume` exposes typed, structured entries and [`src/content.ts`](src/content.ts) derives the chapter, mobile and Quick View content from it.
+
+`npm run check:resume` extracts numeric and date tokens from the rendered Quick View and fails if any token is absent from `RESUME_SOURCE`. `npm run resume:pdf` regenerates the one-page PDF from the same block.
 
 | Content key                                     | Controls                                                  |
 | ----------------------------------------------- | --------------------------------------------------------- |
+| `resume`                                        | Canonical resume facts, dates, metrics, skills and links   |
 | `meta`                                          | Runtime page metadata                                     |
 | `brand`, `identity`                             | Site branding, name, role, biography and availability     |
 | `nav`                                           | Chapter labels and particle titles                        |
 | `sceneLabels`                                   | Particle microtype                                        |
 | `ui`, `loader`                                  | Interface labels, loading messages and fallback copy      |
-| `skills`, `projects`, `education`, `experience` | Portfolio entries and readable layouts                    |
-| `resume`                                        | PDF URL, download filename and summary facts              |
+| `skills`, `projects`, `education`, `experience` | Derived chapter entries and readable layouts              |
 | `contact`                                       | Email, social links and closing note                      |
 | `easterEggs`                                    | Hidden-interaction labels and feedback                    |
 
 When adapting the site:
 
-1. Update the content and verify every claim and contact link. Project links currently point to a GitHub profile; replace them with individual repositories or demos as appropriate.
+1. Update the canonical block and typed entries in `src/resume.ts`, then verify every claim and contact link. Project links currently point to a GitHub profile; replace them with individual repositories or demos as appropriate.
 2. Keep existing chapter IDs unless you also update the associated types, layouts and target-generation logic.
 3. Update the static title, description, Open Graph and Twitter tags in [`index.html`](index.html) alongside `content.meta`, so the initial HTML and share metadata match.
 4. Review decorative map labels and geometry in [`src/ui/world-map.ts`](src/ui/world-map.ts) if changing the theme; not every decorative label comes from the content module.
-5. Replace or regenerate the public assets, then rebuild.
+5. Regenerate the resume with `npm run resume:pdf`, replace or regenerate the other public assets, then rebuild.
 
 ### Public assets
 
-- [`public/resume.pdf`](public/resume.pdf) — the downloadable résumé, copied into the build.
+- [`public/resume.pdf`](public/resume.pdf) — the downloadable November 2026 one-page résumé, generated from `src/resume.ts`.
 - [`public/og.png`](public/og.png) — the social preview image.
 - [`public/favicon.svg`](public/favicon.svg) — the LED-style favicon.
 
@@ -182,7 +186,8 @@ Valid chapter IDs are `home`, `about`, `skills`, `projects`, `education`, `exper
 
 - Portfolio copy is rendered as real DOM text, including a full text edition in `#accessible-content`.
 - Quick View uses a native `<dialog>` with keyboard focus handling, Escape-to-close and focus restoration.
-- Navigation, project controls and easter-egg buttons are keyboard reachable; a skip link opens the text edition.
+- Navigation, project controls and easter-egg buttons are keyboard reachable; the skip link moves focus to the main content region.
+- The no-WebGL fallback provides a gold primary action and a linked list of all eight chapters.
 - `prefers-reduced-motion` reduces animation and disables smooth scrolling and cursor ripples.
 - Fine-pointer devices receive the custom cursor; touch devices do not receive a trailing cursor.
 - WebGL failure preserves the JavaScript-rendered portfolio in the readable fallback layout. This is distinct from the no-JavaScript notice, which only links to the résumé.
@@ -207,7 +212,7 @@ npm test
 
 ### Visual and behavioural QA
 
-Install Chromium as described above, then keep a dev or preview server running in another terminal. The capture scripts do not start a server themselves.
+Install Chromium as described above, then keep a dev or preview server running in another terminal. The capture scripts do not start a server themselves. They wait for `document.body.dataset.ledState === "settled"` after each chapter or project morph, with an eight-second failure, before taking a screenshot.
 
 Using the default dev-server port:
 

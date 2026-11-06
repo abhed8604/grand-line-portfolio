@@ -537,7 +537,6 @@ function drawHome(d: DrawContext): void {
   if (mobile) {
     const artSize = Math.min(w * 0.68, h * 0.3);
     drawArtwork(ctx, artworks.hatSkull, w * 0.5, h * 0.2, artSize, artSize);
-    drawOrbit(ctx, w * 0.5, h * 0.2, artSize * 0.57, artSize * 0.57, 0.12);
     return;
   }
 
@@ -585,10 +584,10 @@ function drawSkills(d: DrawContext): void {
   }
   const titleSize = clamp(w * 0.047, 48, 82);
   drawTracked(ctx, title, w * 0.33, h * 0.2, titleSize, { maxWidth: w * 0.44, tracking: titleSize * 0.025 });
-  const artSize = Math.min(w * 0.34, h * 0.49);
-  drawArtwork(ctx, artworks.logPose, w * 0.3, h * 0.57, artSize, artSize * 1.03);
-  drawOrbit(ctx, w * 0.3, h * 0.57, artSize * 0.56, artSize * 0.42, 0.25);
-  drawOrbit(ctx, w * 0.3, h * 0.57, artSize * 0.64, artSize * 0.48, -0.35);
+  const artSize = Math.min(w * 0.28, h * 0.4);
+  drawArtwork(ctx, artworks.logPose, w * 0.24, h * 0.56, artSize, artSize * 1.03);
+  drawOrbit(ctx, w * 0.24, h * 0.56, artSize * 0.56, artSize * 0.42, 0.25);
+  drawOrbit(ctx, w * 0.24, h * 0.56, artSize * 0.64, artSize * 0.48, -0.35);
 }
 
 function drawProjects(d: DrawContext): void {
@@ -600,8 +599,8 @@ function drawProjects(d: DrawContext): void {
     drawMapRoute(ctx, [w * 0.1, h * 0.53], [w * 0.4, h * 0.45], [w * 0.9, h * 0.48], [2, 12]);
     return;
   }
-  const titleSize = clamp(w * 0.049, 50, 88);
-  drawTracked(ctx, title, w * 0.31, h * 0.25, titleSize, { maxWidth: w * 0.46, tracking: titleSize * 0.018 });
+  const titleSize = clamp(w * 0.046, 48, 82);
+  drawTracked(ctx, title, w * 0.22, h * 0.25, titleSize, { maxWidth: w * 0.28, tracking: titleSize * 0.018 });
 
   drawMapRoute(ctx, [w * 0.075, h * 0.79], [w * 0.12, h * 0.44], [w * 0.54, h * 0.43], [2, 16]);
   drawMapRoute(ctx, [w * 0.075, h * 0.79], [w * 0.15, h * 0.58], [w * 0.44, h * 0.67], [1, 22]);
@@ -640,56 +639,9 @@ function drawSparseRoute(
   ctx.restore();
 }
 
-function drawProject(d: DrawContext, project: Project): void {
-  const { ctx, width: w, height: h, mobile } = d;
-  if (mobile) {
-    drawTracked(ctx, project.title, w * 0.5, h * 0.18, clamp(w * 0.11, 28, 58), {
-      maxWidth: w * 0.86,
-    });
-    drawOrbit(ctx, w * 0.5, h * 0.48, w * 0.35, h * 0.25, 0.08);
-    drawTracked(ctx, content.sceneLabels.projectLog, w * 0.5, h * 0.56, 15, { maxWidth: w * 0.6 });
-    return;
-  }
-  // The panel itself lives in real DOM text; the LEDs conjure its title and frame.
-  const titleSize = clamp(w * 0.042, 42, 74);
-  const lines = project.title.split(" ");
-  const baseY = h * 0.37;
-  if (lines.length > 1) {
-    drawTracked(ctx, lines.slice(0, 2).join(" "), w * 0.3, baseY, titleSize, {
-      maxWidth: w * 0.4,
-    });
-    drawTracked(ctx, lines.slice(2).join(" "), w * 0.3, baseY + titleSize * 0.94, titleSize, {
-      maxWidth: w * 0.4,
-    });
-  } else {
-    drawTracked(ctx, project.title, w * 0.3, baseY, titleSize, { maxWidth: w * 0.42 });
-  }
-  const boxW = Math.min(w * 0.42, 680);
-  const boxH = Math.min(h * 0.37, 370);
-  const x = w * 0.3 - boxW / 2;
-  const y = h * 0.49;
-  ctx.save();
-  ctx.lineWidth = 2;
-  ctx.setLineDash([26, 16]);
-  ctx.strokeRect(x, y, boxW, boxH);
-  ctx.setLineDash([]);
-  ctx.lineWidth = 2;
-  // Corner brackets.
-  const corner = 28;
-  for (const [cx, cy, sx, sy] of [
-    [x, y, 1, 1],
-    [x + boxW, y, -1, 1],
-    [x, y + boxH, 1, -1],
-    [x + boxW, y + boxH, -1, -1],
-  ]) {
-    ctx.beginPath();
-    ctx.moveTo(cx + sx * corner, cy);
-    ctx.lineTo(cx, cy);
-    ctx.lineTo(cx, cy + sy * corner);
-    ctx.stroke();
-  }
-  ctx.restore();
-  drawOrbit(ctx, w * 0.3, h * 0.49 + boxH / 2, boxW * 0.58, boxH * 0.65, -0.1);
+function drawProject(_d: DrawContext, _project: Project): void {
+  // Stage A: the project panel is text-first. The duplicate LED title and the
+  // dashed placeholder frame are collapsed until the project artwork pass.
 }
 
 function drawEducation(d: DrawContext): void {
@@ -929,11 +881,14 @@ export async function makeTargetCloud(id: TargetId, reducedMotion = false): Prom
   const { canvas, ctx } = makeCanvas(width, height, scale);
   const gold = makeCanvas(width, height, scale);
   const drawContext: DrawContext = { ctx, width, height, scale, mobile, reducedMotion };
+  const isProject = id.startsWith("project-");
   applyCtxTransform(ctx, drawContext);
   applyCtxTransform(gold.ctx, drawContext);
   goldLayer = gold.ctx;
   try {
-    drawSparseDust(ctx, width, height, id.length * 997 + width, mobile);
+    if (!isProject) {
+      drawSparseDust(ctx, width, height, id.length * 997 + width, mobile);
+    }
     drawComposition(id, drawContext);
   } finally {
     goldLayer = null;
@@ -952,11 +907,19 @@ export async function makeTargetCloud(id: TargetId, reducedMotion = false): Prom
   for (let i = 0; i < MAX_POINTS; i += 1) {
     let px: number;
     let py: number;
-    let weight = 0.7;
+    let weight = isProject ? 0.45 : 0.7;
     let pixel = -1;
     if (fallback) {
-      px = random() * canvas.width;
-      py = random() * canvas.height;
+      if (isProject) {
+        // Stage A: no project artwork yet. Park the field off-canvas instead of
+        // collapsing 150k particles into the few ambient dust pixels.
+        px = -canvas.width * (1.4 + random() * 0.8);
+        py = random() * canvas.height;
+        weight = 0;
+      } else {
+        px = random() * canvas.width;
+        py = random() * canvas.height;
+      }
     } else {
       const fromEdge = useEdges && (fillCount === 0 || random() < 0.6);
       const pool = fromEdge ? pools.edge : pools.fill;

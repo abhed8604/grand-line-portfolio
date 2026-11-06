@@ -3,6 +3,7 @@
  * Requires the dev server at BASE_URL.
  */
 import { chromium } from "@playwright/test";
+import { waitForSettled } from "./wait-for-settled.mjs";
 
 const base = process.env.BASE_URL ?? "http://127.0.0.1:4173";
 const browser = await chromium.launch({
@@ -21,11 +22,12 @@ function watch(page, label) {
 async function boot(page) {
   await page.goto(`${base}/?tier=high`, { waitUntil: "networkidle" });
   await page.waitForFunction(() => !document.body.classList.contains("is-loading"), { timeout: 45000 });
-  await page.waitForTimeout(2400);
+  await waitForSettled(page, "interaction desktop");
 }
 
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
+await context.addInitScript(() => window.sessionStorage.setItem("led-slow-toast-seen", "1"));
 watch(page, "desktop");
 await boot(page);
 
@@ -69,6 +71,29 @@ results.push({
   value: await page.evaluate(() => ({
     indexHidden: document.querySelector("[data-project-index]")?.hasAttribute("hidden"),
     detailHidden: document.querySelector("[data-project-details]")?.hasAttribute("hidden"),
+  })),
+});
+
+// Internship detail opens from Experience and closes with Escape.
+await page.evaluate(() => window.__led?.story?.goTo("experience", true));
+await waitForSettled(page, "interaction experience");
+await page.click("[data-experience-project]");
+await page.waitForTimeout(500);
+results.push({
+  label: "experience panel open",
+  value: await page.evaluate(() => ({
+    indexHidden: document.querySelector("[data-experience-index]")?.hasAttribute("hidden"),
+    detailHidden: document.querySelector("[data-experience-detail]")?.hasAttribute("hidden"),
+    focused: document.activeElement?.tagName,
+  })),
+});
+await page.keyboard.press("Escape");
+await page.waitForTimeout(500);
+results.push({
+  label: "experience escape close",
+  value: await page.evaluate(() => ({
+    indexHidden: document.querySelector("[data-experience-index]")?.hasAttribute("hidden"),
+    detailHidden: document.querySelector("[data-experience-detail]")?.hasAttribute("hidden"),
   })),
 });
 
@@ -153,10 +178,11 @@ for (const width of [390, 320]) {
     hasTouch: true,
   });
   const mp = await mobile.newPage();
+  await mobile.addInitScript(() => window.sessionStorage.setItem("led-slow-toast-seen", "1"));
   watch(mp, `mobile-${width}`);
   await mp.goto(`${base}/?tier=low`, { waitUntil: "networkidle" });
   await mp.waitForFunction(() => !document.body.classList.contains("is-loading"), { timeout: 45000 });
-  await mp.waitForTimeout(1600);
+  await waitForSettled(mp, `mobile ${width}`);
   results.push({
     label: `mobile ${width} overflow`,
     value: await mp.evaluate(() => ({

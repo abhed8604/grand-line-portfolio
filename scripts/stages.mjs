@@ -1,5 +1,6 @@
 import { chromium } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
+import { waitForSettled } from "./wait-for-settled.mjs";
 
 const base = process.env.BASE_URL ?? "http://127.0.0.1:4173";
 const outDir = process.env.OUT_DIR ?? "/tmp/opencode/led-shots";
@@ -22,7 +23,7 @@ async function makePage(width, height, query = "?tier=high", dpr = 1) {
   await page.waitForFunction(() => !document.body.classList.contains("is-loading"), {
     timeout: 45000,
   });
-  await page.waitForTimeout(3200);
+  await waitForSettled(page, `${width}×${height} boot`);
   return { page, messages };
 }
 
@@ -38,7 +39,7 @@ console.log("DESKTOP", JSON.stringify(state));
 
 for (const id of ["home", "about", "skills", "projects", "education", "experience", "resume", "contact"]) {
   await desktop.page.evaluate((stage) => window.__led?.story?.goTo(stage, true), id);
-  await desktop.page.waitForTimeout(4200);
+  await waitForSettled(desktop.page, `desktop ${id}`);
   await desktop.page.screenshot({ path: `${outDir}/desktop-${id}-1366.png` });
 }
 

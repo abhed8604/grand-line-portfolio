@@ -61,8 +61,24 @@ cursor = initCursor({
 
 let slowToast: HTMLElement | null = null;
 let slowFpsSeconds = 0;
-let slowToastDismissed = false;
+const SLOW_TOAST_KEY = "led-slow-toast-seen";
+const slowToastSeen = (): boolean => {
+  try {
+    return window.sessionStorage.getItem(SLOW_TOAST_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+const markSlowToastSeen = (): void => {
+  try {
+    window.sessionStorage.setItem(SLOW_TOAST_KEY, "1");
+  } catch {
+    // Session storage is optional; the in-memory flag still limits repeats.
+  }
+};
+let slowToastDismissed = slowToastSeen();
 let slowToastVisible = false;
+let slowToastTimer = 0;
 
 const ensureSlowToast = (): HTMLElement => {
   if (slowToast) return slowToast;
@@ -84,16 +100,18 @@ const ensureSlowToast = (): HTMLElement => {
   quick.className = "slow-toast__action";
   quick.dataset.quickView = "";
   quick.dataset.event = "quick_view_open";
-  quick.textContent = content.ui.quickView;
+  quick.textContent = content.ui.slowToastAction;
   quick.addEventListener("click", () => hideSlowToast());
 
   const dismiss = document.createElement("button");
   dismiss.type = "button";
   dismiss.className = "slow-toast__dismiss";
-  dismiss.textContent = content.ui.close;
+  dismiss.textContent = "×";
+  dismiss.setAttribute("aria-label", content.ui.close);
   dismiss.addEventListener("click", () => {
     slowToastDismissed = true;
     slowFpsSeconds = 0;
+    markSlowToastSeen();
     hideSlowToast();
   });
 
@@ -106,6 +124,8 @@ const ensureSlowToast = (): HTMLElement => {
 
 const hideSlowToast = (): void => {
   if (!slowToast) return;
+  window.clearTimeout(slowToastTimer);
+  slowToastTimer = 0;
   slowToast.classList.remove("is-visible");
   slowToast.hidden = true;
   slowToastVisible = false;
@@ -113,10 +133,14 @@ const hideSlowToast = (): void => {
 
 const showSlowToast = (): void => {
   if (slowToastDismissed || slowToastVisible) return;
+  slowToastDismissed = true;
+  markSlowToastSeen();
   const element = ensureSlowToast();
   slowToastVisible = true;
   element.hidden = false;
   window.requestAnimationFrame(() => element.classList.add("is-visible"));
+  window.clearTimeout(slowToastTimer);
+  slowToastTimer = window.setTimeout(() => hideSlowToast(), 12000);
 };
 
 const handleLowFps = (fps: number): void => {
@@ -258,14 +282,17 @@ const triggerEgg = async (egg: string, element: HTMLElement): Promise<void> => {
     return;
   }
   if (egg === "mark") {
+    const contactScene = document.getElementById("scene-contact");
+    contactScene?.classList.add("is-final-word");
     window.clearTimeout(finalWordTimer);
+    finalWordTimer = window.setTimeout(() => {
+      contactScene?.classList.remove("is-final-word");
+      if (particleEffects) markContactCloud();
+    }, 5600);
     showToast(ui, content.easterEggs.markToast);
     if (particleEffects) {
       const cloud = await getOnePieceCloud();
       if (cloud) engine?.morphTo(cloud);
-      finalWordTimer = window.setTimeout(() => {
-        markContactCloud();
-      }, 5600);
     }
     showToast(ui, content.easterEggs.finalWord, 5600);
   }
@@ -279,6 +306,7 @@ const showFallback = (error?: unknown): void => {
   document.body.classList.remove("is-loading");
   document.body.dataset.mode = "fallback";
   document.body.dataset.stage = "home";
+  document.body.dataset.ledState = "settled";
   app?.setAttribute("aria-busy", "false");
   ui.loader.setAttribute("aria-hidden", "true");
   ui.loader.classList.add("is-leaving");
@@ -483,6 +511,18 @@ document.addEventListener("click", (event) => {
   if (target.closest("[data-project-back]") && story) {
     event.preventDefault();
     story.closeProject();
+    return;
+  }
+
+  if (target.closest("[data-experience-project]") && story) {
+    event.preventDefault();
+    story.selectExperience();
+    return;
+  }
+
+  if (target.closest("[data-experience-back]") && story) {
+    event.preventDefault();
+    story.closeExperience();
     return;
   }
 

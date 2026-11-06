@@ -4,6 +4,7 @@
  */
 import { chromium } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
+import { waitForSettled } from "./wait-for-settled.mjs";
 
 const base = process.env.BASE_URL ?? "http://127.0.0.1:4173";
 const outDir = process.env.OUT_DIR ?? "/tmp/opencode/led-shots";
@@ -26,7 +27,7 @@ async function desktop(width, height) {
   watch(page, `desktop-${width}`);
   await page.goto(`${base}/?tier=high`, { waitUntil: "networkidle" });
   await page.waitForFunction(() => !document.body.classList.contains("is-loading"), { timeout: 45000 });
-  await page.waitForTimeout(2800);
+  await waitForSettled(page, `desktop ${width} boot`);
   return { context, page };
 }
 
@@ -34,7 +35,7 @@ async function desktop(width, height) {
   const { context, page } = await desktop(1366, 768);
   for (const id of ["home", "resume", "contact", "experience"]) {
     await page.evaluate((stage) => window.__led?.story?.goTo(stage, true), id);
-    await page.waitForTimeout(3800);
+    await waitForSettled(page, `quick-check ${id}`);
     await page.screenshot({ path: `${outDir}/fix-${id}-1366x768.png` });
   }
   const experience = await page.evaluate(() => {
@@ -54,7 +55,7 @@ async function desktop(width, height) {
 {
   const { context, page } = await desktop(1440, 900);
   await page.evaluate(() => window.__led?.story?.goTo("experience", true));
-  await page.waitForTimeout(3800);
+  await waitForSettled(page, "quick-check experience 1440");
   await page.screenshot({ path: `${outDir}/fix-experience-1440x900.png` });
   console.log("EXPERIENCE 1440", JSON.stringify(await page.evaluate(() => {
     const panel = document.querySelector(".experience-panel");
@@ -70,7 +71,7 @@ async function desktop(width, height) {
   watch(page, "mobile");
   await page.goto(`${base}/?tier=low`, { waitUntil: "networkidle" });
   await page.waitForFunction(() => !document.body.classList.contains("is-loading"), { timeout: 45000 });
-  await page.waitForTimeout(3200);
+  await waitForSettled(page, "quick-check mobile boot");
   await page.screenshot({ path: `${outDir}/fix-mobile-home-390x844.png` });
   await context.close();
 }

@@ -1,5 +1,21 @@
 # Progress
 
+## 2026-11-06 — Stage A: resume sync, layout and behaviour
+
+- Added `src/resume.ts` as the single resume source of truth for November 2026: identity, status, summary, education, internship, three projects, six skill groups, achievements, dates and metrics. `src/content.ts` now derives desktop, mobile and Quick View content from it.
+- Replaced the stale September PDF with a generated one-page November 2026 PDF. `npm run resume:pdf` renders it from `RESUME_SOURCE`; `npm run check:resume` extracts every numeric/date token from Quick View and fails if it is absent from the source block.
+- Migrated the Enterprise Data Warehouse from Projects into Experience. Projects are now inventory optimization, business AI agent and customer churn in resume order with corrected metrics (`15+ metrics`, `7,043 customers`, `42.7% vs 2.8%`). Experience includes a warehouse detail panel and internship metrics.
+- Removed the Class XII entry, old skill themes and SQL Server from skills; added CGPA, coursework chips, six plain skill groups, Delhi location and the exact status line across Home, About, Contact, mobile and Quick View.
+- Layout: 3×2 skills grid with left compass artwork; wide-screen type/art scaling; 12/13px minimums; gold metric values over labels; text-first project details with the empty particle frame collapsed; single education card; compact internship/achievement entries; Quick View 880px reading column with sticky Download Resume/Close; gold fallback CTA and eight-section link list.
+- Header/rail cleanup: removed signal and subtitle, rail is dots with only the active label, 26px hit areas. Mobile hero uses 100svh, header-safe top padding and two-line status; ghost map layers, atmosphere dot grid and orbit are hidden on mobile.
+- Behaviour: added `data-led-state="settled"` after morph completion and updated screenshot scripts to wait for it; added Experience detail open/close and Escape handling; slow-FPS toast now auto-hides after 12s and appears once per session; mark egg fades the contact column while “THE ONE PIECE IS REAL” is visible.
+- Visual fixes: project dock scrims and 1366 compact layout (all three projects fit without scroll); about/experience/resume/contact readability; project particle title clears the index; mobile static project grid bug fixed.
+- QA: `check`, `build`, `check:resume`, `test`, `qa`, `quick-check`, `interaction-check` pass. Only expected fallback WebGL console errors and the Three.js chunk warning remain. Desktop and mobile audits report no visible text below 12/13px and no horizontal overflow.
+- Captures: `/tmp/opencode/stagea-final4` (40 current Stage A screenshots), `/tmp/opencode/stagea-hidden` (project bottoms, Quick View, toasts, eggs, mobile projects). Contact sheets and individual copies: `/home/abhed/Pictures/LED Grand Line Stage A/`.
+- Remaining TODOs: individual repository/demo URLs for the three projects and warehouse (currently the real GitHub profile); owner confirmation that `LINKEDIN_URL` resolves. Stage B artwork is intentionally blocked until owner approval.
+- Commit note: Stage A combines the content, layout, behaviour and QA phases into one commit because they share the same files; this deviation is recorded intentionally.
+- Next: owner review of the Stage A checkpoint. Do not start Stage B artwork until explicitly approved.
+
 ## 2026-11-04 — Readability, accessibility and finish pass
 - Integrated Phases 2–9 from the handover into one working pass: readable sans body copy, 2×2 skill cards, wider resume column, gold CTA/rail/focus system, unified particle edge/fill weighting, original back-view Luffy silhouette, gold hat band and lion figurehead, lite mobile tier, adaptive point-budget reduction, mobile section vignettes, loader skip/keyboard support, slow-FPS Quick View toast, opt-in analytics, and refreshed metadata/favicon.
 - Removed remaining progress clutter: loader coordinates, right-edge coordinate label, orphan scene-note/index/skills-ring CSS and DOM, and the old scroll cue.

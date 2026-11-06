@@ -9,6 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
+    "check:resume": "npm run build && node scripts/check-resume.mjs",
+    "resume:pdf": "node scripts/make-resume.mjs",
     "test": "playwright test src/ui/build.test.ts",
     "shots": "node scripts/stages.mjs",
     "qa": "node scripts/qa-capture.mjs",

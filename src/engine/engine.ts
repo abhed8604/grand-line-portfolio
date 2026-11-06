@@ -409,6 +409,7 @@ export class LEDEngine {
   private frames = 0;
   private statsElapsed = 0;
   private activePointCount: number;
+  private settleTimer = 0;
   private qualityElapsed = 0;
   private qualityFrameSum = 0;
   private qualityFrames = 0;
@@ -437,6 +438,7 @@ export class LEDEngine {
     this.activePointCount = this.tier.points;
     this.reducedMotion = Boolean(options.reducedMotion);
     this.forcedTier = Boolean(new URLSearchParams(window.location.search).get("tier"));
+    document.body.dataset.ledState = "settled";
     this.onStats = callbacks.onStats;
     this.onQuality = callbacks.onQuality;
 
@@ -601,6 +603,18 @@ export class LEDEngine {
     const uniforms = this.pointsMaterial.uniforms;
     uniforms.uPositions.value = this.sim.positionTexture;
     uniforms.uTargets.value = texture;
+    this.markMorphing();
+  }
+
+  private markMorphing(): void {
+    window.clearTimeout(this.settleTimer);
+    document.body.dataset.ledState = "morphing";
+    this.settleTimer = window.setTimeout(
+      () => {
+        document.body.dataset.ledState = "settled";
+      },
+      this.reducedMotion ? 80 : 3000,
+    );
   }
 
   setQuality(name: QualityName): EngineStats {
@@ -763,6 +777,7 @@ export class LEDEngine {
 
   destroy(): void {
     this.destroyed = true;
+    window.clearTimeout(this.settleTimer);
     this.stopLoop();
     this.visibilityObserver?.disconnect();
     document.removeEventListener("visibilitychange", this.handleVisibility);

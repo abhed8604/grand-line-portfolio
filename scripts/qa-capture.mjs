@@ -5,6 +5,7 @@
  */
 import { chromium } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
+import { waitForSettled } from "./wait-for-settled.mjs";
 
 const base = process.env.BASE_URL ?? "http://127.0.0.1:4173";
 const outDir = process.env.OUT_DIR ?? "/tmp/opencode/led-qa2";
@@ -34,12 +35,13 @@ async function openDesktop(width, height, query = "?tier=high", reducedMotion = 
     reducedMotion,
   });
   const page = await context.newPage();
+  await context.addInitScript(() => window.sessionStorage.setItem("led-slow-toast-seen", "1"));
   watch(page, `desktop-${width}x${height}`);
   await page.goto(`${base}/${query}`, { waitUntil: "networkidle" });
   await page.waitForFunction(() => !document.body.classList.contains("is-loading"), {
     timeout: 45000,
   });
-  await settle(page, 2800);
+  await waitForSettled(page, `${width}×${height} boot`);
   return { context, page };
 }
 
@@ -53,18 +55,18 @@ for (const [width, height] of [
   const { context, page } = await openDesktop(width, height);
   for (const stage of stages) {
     await page.evaluate((id) => window.__led?.story?.goTo(id, true), stage);
-    await settle(page);
+    await waitForSettled(page, `desktop ${width} ${stage}`);
     await page.screenshot({ path: `${outDir}/desktop-${stage}-${width}x${height}.png` });
   }
 
   if (width === 1440) {
     await page.evaluate(() => window.__led?.story?.goTo("projects", true));
-    await settle(page);
+    await waitForSettled(page, "desktop projects before selection");
     await page.evaluate(async () => {
       const project = document.querySelector(".project-row")?.dataset.project;
       if (project) await window.__led?.story?.selectProject(project);
     });
-    await settle(page);
+    await waitForSettled(page, "desktop project detail");
     await page.screenshot({ path: `${outDir}/desktop-project-detail-1440x900.png` });
 
     const projectState = await page.evaluate(() => {
@@ -77,6 +79,14 @@ for (const [width, height] of [
       };
     });
     console.log("PROJECT", JSON.stringify(projectState));
+
+    await page.evaluate(() => window.__led?.story?.goTo("experience", true));
+    await waitForSettled(page, "desktop experience before selection");
+    await page.click("[data-experience-project]");
+    await settle(page, 500);
+    await page.screenshot({ path: `${outDir}/desktop-experience-detail-1440x900.png` });
+    await page.keyboard.press("Escape");
+    await settle(page, 300);
 
     await page.evaluate(() => window.__led?.openQuickView());
     await settle(page, 900);
@@ -97,6 +107,7 @@ for (const [width, height] of [
 {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
+  await context.addInitScript(() => window.sessionStorage.setItem("led-slow-toast-seen", "1"));
   watch(page, "loader");
   await page.goto(`${base}/?tier=high`, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(650);
@@ -108,7 +119,7 @@ for (const [width, height] of [
 {
   const { context, page } = await openDesktop(1440, 900, "?tier=high", "reduce");
   await page.evaluate(() => window.__led?.story?.goTo("home", true));
-  await settle(page, 1200);
+  await waitForSettled(page, "desktop reduced motion");
   await page.screenshot({ path: `${outDir}/desktop-reduced-motion-1440x900.png` });
   await context.close();
 }
@@ -122,17 +133,22 @@ for (const [width, height] of [
     hasTouch: true,
   });
   const page = await context.newPage();
+  await context.addInitScript(() => window.sessionStorage.setItem("led-slow-toast-seen", "1"));
   watch(page, "mobile");
   await page.goto(`${base}/?tier=low`, { waitUntil: "networkidle" });
   await page.waitForFunction(() => !document.body.classList.contains("is-loading"), {
     timeout: 45000,
   });
-  await settle(page, 3200);
+  await waitForSettled(page, "mobile boot");
   await page.screenshot({ path: `${outDir}/mobile-home-390x844.png` });
 
   for (const [name, id] of [
     ["about", "flow-about"],
+    ["skills", "flow-skills"],
     ["projects", "flow-projects"],
+    ["education", "flow-education"],
+    ["experience", "flow-experience"],
+    ["resume", "flow-resume"],
     ["contact", "flow-contact"],
   ]) {
     await page.evaluate((target) => {
@@ -154,6 +170,7 @@ for (const [width, height] of [
 {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
+  await context.addInitScript(() => window.sessionStorage.setItem("led-slow-toast-seen", "1"));
   watch(page, "fallback");
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;

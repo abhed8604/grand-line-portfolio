@@ -39,6 +39,15 @@ function sceneMeta(section: (typeof content.nav)[number]): string {
   </div>`;
 }
 
+function statusLine(className = ""): string {
+  return `<p class="status-line${className ? ` ${className}` : ""}"><i aria-hidden="true"></i>${escapeHTML(content.identity.status)}</p>`;
+}
+
+function metricChip(metric: { value: string; label: string }): string {
+  const wide = metric.value.length > 8 ? " metric-chip--wide" : "";
+  return `<span class="metric-chip${wide}"><strong>${escapeHTML(metric.value)}</strong><span>${escapeHTML(metric.label)}</span></span>`;
+}
+
 function makeScene(
   section: (typeof content.nav)[number],
   body: string,
@@ -65,7 +74,7 @@ function buildHome(section: (typeof content.nav)[number], index: number, total: 
           ${icon("arrow-up-right")}
         </button>
       </div>
-      <p class="hero-copy__availability"><i aria-hidden="true"></i>${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
+      ${statusLine("hero-copy__status")}
     </div>
     <h1 id="scene-title-home" class="sr-only">${escapeHTML(content.identity.name)} — ${escapeHTML(content.identity.role)}</h1>
     <button class="egg-hotspot egg-hotspot--hat" type="button" data-egg="hat" aria-label="${escapeHTML(content.easterEggs.hat)}">
@@ -81,10 +90,11 @@ function buildAbout(section: (typeof content.nav)[number], index: number, total:
       <p class="lead">${escapeHTML(content.identity.bioLead)}</p>
       <p class="body-copy">${escapeHTML(content.identity.bioBody)}</p>
       <p class="aside-note">${escapeHTML(content.identity.bioNote)}</p>
+      ${statusLine("about-panel__status")}
       <dl class="fact-list">
         <div><dt>${escapeHTML(content.resume.facts[1].label)}</dt><dd>${escapeHTML(content.identity.location)}</dd></div>
         <div><dt>${escapeHTML(content.resume.facts[0].label)}</dt><dd>${escapeHTML(content.identity.role)}</dd></div>
-        <div><dt>${escapeHTML(content.ui.statusLabel)}</dt><dd>${escapeHTML(content.identity.status)}</dd></div>
+        <div><dt>${escapeHTML(content.resume.facts[2].label)}</dt><dd>${escapeHTML(content.resume.facts[2].value)}</dd></div>
       </dl>
       <h2 id="scene-title-about" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
     </div>`,
@@ -95,12 +105,7 @@ function buildSkills(section: (typeof content.nav)[number], index: number, total
   const clusters = content.skills.groups
     .map(
       (group, groupIndex) => `<article class="skill-cluster" data-reveal style="--cluster-index:${groupIndex}">
-        <div class="skill-cluster__head">
-          <span class="skill-cluster__number">${String(groupIndex + 1).padStart(2, "0")}</span>
-          <span class="skill-cluster__dot" aria-hidden="true"></span>
-          <h3>${escapeHTML(group.label)}</h3>
-          <span class="skill-cluster__theme">${escapeHTML(group.theme)}</span>
-        </div>
+        <h3>${escapeHTML(group.label)}</h3>
         <ul class="dot-list">
           ${group.items.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}
         </ul>
@@ -110,14 +115,18 @@ function buildSkills(section: (typeof content.nav)[number], index: number, total
 
   return makeScene(
     section,
-    `<div class="skills-field">
-      ${clusters}
-    </div>
-    <aside class="skills-aside" data-reveal>
-      <h2 id="scene-title-skills" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
-      <p class="body-copy">${escapeHTML(content.skills.intro)}</p>
-      <p class="annotation"><span aria-hidden="true"></span>${escapeHTML(content.skills.orbitLabel)}</p>
-    </aside>`,
+    `<div class="skills-layout">
+      <div class="skills-layout__art" aria-hidden="true"></div>
+      <div class="skills-column">
+        <aside class="skills-aside" data-reveal>
+          <h2 id="scene-title-skills" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+          <p class="body-copy">${escapeHTML(content.skills.intro)}</p>
+        </aside>
+        <div class="skills-field">
+          ${clusters}
+        </div>
+      </div>
+    </div>`,
   );
 }
 
@@ -126,9 +135,8 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
     .map((project, projectIndex) => {
       const positions = [
         ["17.1%", "72.6%"],
-        ["37.2%", "55.8%"],
-        ["52%", "42.7%"],
-        ["33%", "83%"],
+        ["40%", "51%"],
+        ["31%", "80%"],
       ];
       const [x, y] = positions[projectIndex] ?? positions[0];
       return `<button type="button" class="island-marker" style="--x:${x};--y:${y}" data-project="${escapeHTML(project.id)}" data-event="project_open" aria-label="${escapeHTML(content.ui.selectProject)}: ${escapeHTML(project.title)}">
@@ -146,12 +154,13 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
         <span class="project-row__main">
           <span class="project-row__title">${escapeHTML(project.title)}</span>
           <span class="project-row__short">${escapeHTML(project.short)}</span>
+          <span class="project-row__date">${escapeHTML(project.date)}</span>
           ${
-            project.metrics?.length
+            project.metrics.length
               ? `<span class="metric-chips" aria-label="${escapeHTML(content.ui.metricsLabel)}">${project.metrics
                   .map(
                     (metric) =>
-                      `<span class="metric-chip"><strong>${escapeHTML(metric.value)}</strong>${escapeHTML(metric.label)}</span>`,
+                      `${metricChip(metric)}`,
                   )
                   .join("")}</span>`
               : ""
@@ -171,11 +180,11 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
             `<a href="${safeHref(link.href)}" ${externalAttrs(link.href)} data-event="project_link">${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right")}</a>`,
         )
         .join("");
-      const metrics = project.metrics?.length
+      const metrics = project.metrics.length
         ? `<div class="project-detail__metrics"><span class="micro-label">${escapeHTML(content.ui.metricsLabel)}</span><div class="metric-chips">${project.metrics
             .map(
               (metric) =>
-                `<span class="metric-chip"><strong>${escapeHTML(metric.value)}</strong>${escapeHTML(metric.label)}</span>`,
+                `${metricChip(metric)}`,
             )
             .join("")}</div></div>`
         : "";
@@ -183,8 +192,9 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
         <button type="button" class="back-button" data-project-back>
           ${icon("arrow-left")}<span>${escapeHTML(content.ui.backToMap)}</span>
         </button>
-        <p class="project-detail__index">${escapeHTML(content.ui.selectProject)} / ${String(projectIndex + 1).padStart(2, "0")}</p>
+        <p class="project-detail__date">${escapeHTML(project.date)}</p>
         <h3>${escapeHTML(project.title)}</h3>
+        ${metrics}
         <div class="project-detail__block">
           <span class="micro-label">${escapeHTML(content.ui.problemLabel)}</span>
           <p class="project-detail__body">${escapeHTML(project.problem)}</p>
@@ -193,7 +203,6 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
           <span class="micro-label">${escapeHTML(content.ui.approachLabel)}</span>
           <p class="project-detail__body">${escapeHTML(project.approach)}</p>
         </div>
-        ${metrics}
         <div class="project-detail__block">
           <span class="micro-label">${escapeHTML(content.ui.resultLabel)}</span>
           ${
@@ -244,17 +253,17 @@ function buildProjects(section: (typeof content.nav)[number], index: number, tot
 function buildEducation(section: (typeof content.nav)[number], index: number, total: number): string {
   const entries = content.education.entries
     .map(
-      (entry, entryIndex) => `<li class="timeline-entry">
-        <span class="timeline-entry__index">${String(entryIndex + 1).padStart(2, "0")}</span>
-        <div class="timeline-entry__copy">
-          <div class="timeline-entry__top">
-            <h3>${escapeHTML(entry.institution)}</h3>
-            <span>${escapeHTML(entry.period)}</span>
-          </div>
-          <p class="timeline-entry__qual">${escapeHTML(entry.qualification)}</p>
-          <p class="body-copy">${escapeHTML(entry.detail)}</p>
+      (entry) => `<article class="education-card">
+        <div class="education-card__top">
+          <h3>${escapeHTML(entry.institution)}</h3>
+          <span>${escapeHTML(entry.period)}</span>
         </div>
-      </li>`,
+        <p class="education-card__qual">${escapeHTML(entry.qualification)} <span>CGPA ${escapeHTML(entry.cgpa)}</span></p>
+        <div class="education-card__coursework">
+          <span class="micro-label">${escapeHTML(content.ui.courseworkLabel)}</span>
+          <ul class="tag-list">${entry.coursework.map((course) => `<li>${escapeHTML(course)}</li>`).join("")}</ul>
+        </div>
+      </article>`,
     )
     .join("");
 
@@ -263,24 +272,43 @@ function buildEducation(section: (typeof content.nav)[number], index: number, to
     `<div class="education-panel" data-reveal>
       <h2 id="scene-title-education" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="body-copy education-panel__intro">${escapeHTML(content.education.intro)}</p>
-      <ol class="timeline">${entries}</ol>
+      ${entries}
     </div>`,
   );
 }
 
 function buildExperience(section: (typeof content.nav)[number], index: number, total: number): string {
   const entries = content.experience.entries
-    .map(
-      (entry) => `<li class="experience-entry">
+    .map((entry) => {
+      const metrics = entry.metrics?.length
+        ? `<div class="metric-chips" aria-label="${escapeHTML(content.ui.metricsLabel)}">${entry.metrics
+            .map(
+              (metric) =>
+                `${metricChip(metric)}`,
+            )
+            .join("")}</div>`
+        : "";
+      const projectAction = entry.projectId
+        ? `<button type="button" class="led-button led-button--outline experience-entry__project" data-experience-project="${escapeHTML(entry.projectId)}" data-event="project_open">
+            <span class="led-button__label">${escapeHTML(content.ui.viewProject)}</span>
+            ${icon("arrow-right", "led-button__icon")}
+          </button>`
+        : "";
+      const summary = entry.type === "internship"
+        ? ""
+        : `<p class="body-copy">${escapeHTML(entry.detail)}</p>`;
+      return `<li class="experience-entry experience-entry--${entry.type}">
         <div class="experience-entry__top">
           <span class="type-badge type-badge--${entry.type}">${escapeHTML(content.ui.experienceTypes[entry.type])}</span>
           <span class="experience-entry__period">${escapeHTML(entry.period)}</span>
         </div>
         <h3>${escapeHTML(entry.role)}</h3>
         <p class="experience-entry__place">${escapeHTML(entry.place)}</p>
-        <p class="body-copy">${escapeHTML(entry.detail)}</p>
-      </li>`,
-    )
+        ${summary}
+        ${metrics}
+        ${projectAction}
+      </li>`;
+    })
     .join("");
 
   const certifications = content.experience.certifications.length
@@ -302,14 +330,61 @@ function buildExperience(section: (typeof content.nav)[number], index: number, t
       </section>`
     : "";
 
+  const detail = content.experience.warehouse;
+  const detailTags = detail.tech.map((tech) => `<li>${escapeHTML(tech)}</li>`).join("");
+  const detailLinks = detail.links
+    .map(
+      (link) =>
+        `<a class="led-button led-button--outline" href="${safeHref(link.href)}" ${externalAttrs(link.href)} data-event="project_link">${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right", "led-button__icon")}</a>`,
+    )
+    .join("");
+
   return makeScene(
     section,
     `<div class="experience-panel" data-lenis-prevent data-reveal>
-      <h2 id="scene-title-experience" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
-      <p class="body-copy experience-panel__intro">${escapeHTML(content.experience.intro)}</p>
-      <ol class="experience-list">${entries}</ol>
-      ${certifications}
-      <p class="experience-scroll-cue" aria-hidden="true"><span>${escapeHTML(content.ui.scrollExperience)}</span><span>↓</span></p>
+      <div data-experience-index>
+        <h2 id="scene-title-experience" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
+        <p class="body-copy experience-panel__intro">${escapeHTML(content.experience.intro)}</p>
+        <ol class="experience-list">${entries}</ol>
+        ${certifications}
+        <p class="experience-scroll-cue" aria-hidden="true"><span>${escapeHTML(content.ui.scrollExperience)}</span><span>↓</span></p>
+      </div>
+      <article class="project-detail experience-detail" data-experience-detail hidden>
+        <button type="button" class="back-button" data-experience-back>
+          ${icon("arrow-left")}<span>${escapeHTML(content.ui.backToMap)}</span>
+        </button>
+        <p class="project-detail__date">${escapeHTML(detail.date)}</p>
+        <h3>${escapeHTML(detail.title)}</h3>
+        <div class="project-detail__metrics">
+          <span class="micro-label">${escapeHTML(content.ui.metricsLabel)}</span>
+          <div class="metric-chips">${detail.metrics
+            .map(
+              (metric) =>
+                `${metricChip(metric)}`,
+            )
+            .join("")}</div>
+        </div>
+        <div class="project-detail__block">
+          <span class="micro-label">${escapeHTML(content.ui.problemLabel)}</span>
+          <p class="project-detail__body">${escapeHTML(detail.problem)}</p>
+        </div>
+        <div class="project-detail__block">
+          <span class="micro-label">${escapeHTML(content.ui.approachLabel)}</span>
+          <p class="project-detail__body">${escapeHTML(detail.approach)}</p>
+        </div>
+        <div class="project-detail__block">
+          <span class="micro-label">${escapeHTML(content.ui.resultLabel)}</span>
+          <p class="project-detail__body">${escapeHTML(detail.result)}</p>
+        </div>
+        <div class="project-detail__stack">
+          <span class="micro-label">${escapeHTML(content.ui.stackLabel)}</span>
+          <ul class="tag-list">${detailTags}</ul>
+        </div>
+        <div class="project-detail__links">
+          <span class="micro-label">${escapeHTML(content.ui.projectLinks)}</span>
+          <div class="link-row">${detailLinks}</div>
+        </div>
+      </article>
     </div>`,
   );
 }
@@ -357,7 +432,7 @@ function buildContact(section: (typeof content.nav)[number], index: number, tota
     `<div class="contact-panel" data-reveal>
       <h2 id="scene-title-contact" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="lead">${escapeHTML(content.contact.intro)}</p>
-      <p class="micro-label contact-status">${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
+      ${statusLine("contact-panel__status")}
       <ul class="contact-list">${links}</ul>
       <div class="contact-panel__actions">
         ${emailAction}
@@ -421,11 +496,9 @@ function buildHeader(): string {
       ${ledMark()}
       <span class="brand__copy">
         <span class="brand__name">${escapeHTML(content.brand.name)}</span>
-        <span class="brand__sub">${escapeHTML(content.identity.name)} / ${escapeHTML(content.identity.role)}</span>
       </span>
     </a>
     <div class="header-actions">
-      <span class="signal"><i aria-hidden="true"></i>${escapeHTML(content.ui.online)}</span>
       <a class="header-resume" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}" data-event="resume_download" aria-label="${escapeHTML(content.ui.resumeDownload)} (${escapeHTML(content.ui.resumeFormat)})">
         <span class="header-resume__label">${escapeHTML(content.ui.resumeLabel)}</span>
         ${icon("download", "header-resume__icon")}
@@ -440,12 +513,9 @@ function buildHeader(): string {
 function buildNav(): string {
   const buttons = content.nav
     .map(
-      (section, index) => `<button type="button" class="nav-dot" data-goto-nav="${section.id}" aria-label="${escapeHTML(content.ui.goTo)} ${escapeHTML(section.eyebrow)} — ${escapeHTML(section.title)}" aria-current="false">
+      (section) => `<button type="button" class="nav-dot" data-goto-nav="${section.id}" aria-label="${escapeHTML(content.ui.goTo)} ${escapeHTML(section.eyebrow)} — ${escapeHTML(section.title)}" aria-current="false">
         <span class="nav-dot__mark" aria-hidden="true"></span>
-        <span class="nav-dot__label" aria-hidden="true">
-          <span class="nav-dot__index">${String(index + 1).padStart(2, "0")}</span>
-          <span>${escapeHTML(section.nav)}</span>
-        </span>
+        <span class="nav-dot__label" aria-hidden="true">${escapeHTML(section.nav)}</span>
       </button>`,
     )
     .join("");
@@ -509,13 +579,13 @@ function renderStaticSections(prefix: string): string {
   const skills = content.skills.groups
     .map(
       (group) => `<div class="static-skill-group">
-        <h3>${escapeHTML(group.label)} <span>${escapeHTML(group.theme)}</span></h3>
+        <h3>${escapeHTML(group.label)}</h3>
         <ul class="inline-dot-list">${group.items.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}</ul>
       </div>`,
     )
     .join("");
   const projects = content.projects.entries
-    .map((project, index) => {
+    .map((project) => {
       const tech = project.tech.map((item) => `<li>${escapeHTML(item)}</li>`).join("");
       const links = project.links
         .map(
@@ -523,17 +593,17 @@ function renderStaticSections(prefix: string): string {
             `<a class="static-link" href="${safeHref(link.href)}" ${externalAttrs(link.href)} data-event="project_link">${escapeHTML(link.label)}${icon(isExternal(link.href) ? "external" : "arrow-right")}</a>`,
         )
         .join("");
-      const metrics = project.metrics?.length
+      const metrics = project.metrics.length
         ? `<div class="metric-chips">${project.metrics
             .map(
               (metric) =>
-                `<span class="metric-chip"><strong>${escapeHTML(metric.value)}</strong>${escapeHTML(metric.label)}</span>`,
+                `${metricChip(metric)}`,
             )
             .join("")}</div>`
         : "";
       return `<article class="static-project">
-        <div class="static-project__index">${String(index + 1).padStart(2, "0")}</div>
         <div class="static-project__body">
+          <p class="static-project__date">${escapeHTML(project.date)}</p>
           <h3>${escapeHTML(project.title)}</h3>
           <p class="static-project__short">${escapeHTML(project.short)}</p>
           <p>${escapeHTML(project.description)}</p>
@@ -548,19 +618,38 @@ function renderStaticSections(prefix: string): string {
     .map(
       (entry) => `<li class="static-entry">
         <div class="static-entry__heading"><h3>${escapeHTML(entry.institution)}</h3><span>${escapeHTML(entry.period)}</span></div>
-        <p class="static-entry__role">${escapeHTML(entry.qualification)}</p>
+        <p class="static-entry__role">${escapeHTML(entry.qualification)} · CGPA ${escapeHTML(entry.cgpa)}</p>
         <p>${escapeHTML(entry.detail)}</p>
+        <ul class="tag-list">${entry.coursework.map((course) => `<li>${escapeHTML(course)}</li>`).join("")}</ul>
       </li>`,
     )
     .join("");
   const experience = content.experience.entries
-    .map(
-      (entry) => `<li class="static-entry">
+    .map((entry) => {
+      const bullets = entry.bullets?.length
+        ? `<ul class="static-entry__bullets">${entry.bullets.map((bullet) => `<li>${escapeHTML(bullet)}</li>`).join("")}</ul>`
+        : "";
+      const metrics = entry.metrics?.length
+        ? `<div class="metric-chips">${entry.metrics
+            .map(
+              (metric) =>
+                `${metricChip(metric)}`,
+            )
+            .join("")}</div>`
+        : "";
+      const projectLink =
+        entry.projectId && content.experience.warehouse.links[0]
+          ? `<a class="static-link" href="${safeHref(content.experience.warehouse.links[0].href)}" ${externalAttrs(content.experience.warehouse.links[0].href)} data-event="project_link">${escapeHTML(content.experience.warehouse.links[0].label)}${icon(isExternal(content.experience.warehouse.links[0].href) ? "external" : "arrow-right")}</a>`
+          : "";
+      return `<li class="static-entry">
         <div class="static-entry__heading"><h3>${escapeHTML(entry.role)}</h3><span>${escapeHTML(entry.period)}</span></div>
-        <p class="static-entry__role"><span class="type-badge type-badge--${entry.type}">${escapeHTML(content.ui.experienceTypes[entry.type])}</span>${escapeHTML(entry.place)}</p>
+        <p class="static-entry__role"><span class="type-badge type-badge--${entry.type}">${escapeHTML(content.ui.experienceTypes[entry.type])}</span> <span>${escapeHTML(entry.place)}</span></p>
         <p>${escapeHTML(entry.detail)}</p>
-      </li>`,
-    )
+        ${bullets}
+        ${metrics}
+        ${projectLink}
+      </li>`;
+    })
     .join("");
   const contact = content.contact.links
     .map(
@@ -581,10 +670,11 @@ function renderStaticSections(prefix: string): string {
         <p class="lead">${escapeHTML(content.identity.bioLead)}</p>
         <p>${escapeHTML(content.identity.bioBody)}</p>
         <p class="aside-note">${escapeHTML(content.identity.bioNote)}</p>
+        ${statusLine("static-status")}
         <dl class="fact-list">
           <div><dt>${escapeHTML(content.resume.facts[1].label)}</dt><dd>${escapeHTML(content.identity.location)}</dd></div>
           <div><dt>${escapeHTML(content.resume.facts[0].label)}</dt><dd>${escapeHTML(content.identity.role)}</dd></div>
-          <div><dt>${escapeHTML(content.ui.statusLabel)}</dt><dd>${escapeHTML(content.identity.status)}</dd></div>
+          <div><dt>${escapeHTML(content.resume.facts[2].label)}</dt><dd>${escapeHTML(content.resume.facts[2].value)}</dd></div>
         </dl>
       </div>
     </section>
@@ -661,7 +751,7 @@ function renderStaticSections(prefix: string): string {
       </header>
       <div class="static-section__content">
         <p class="lead">${escapeHTML(content.contact.intro)}</p>
-        <p class="micro-label contact-status">${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
+        ${statusLine("static-status")}
         <ul class="static-contact-list">${contact}</ul>
         <div class="static-contact__actions">
           ${emailAction}
@@ -679,14 +769,19 @@ function buildQuickView(): string {
   const toc = content.nav
     .slice(1)
     .map(
-      (section, index) =>
-        `<a href="#qv-${section.id}"><span>${String(index + 2).padStart(2, "0")}</span>${escapeHTML(section.nav)}</a>`,
+      (section) =>
+        `<a href="#qv-${section.id}">${escapeHTML(section.nav)}</a>`,
     )
     .join("");
   return `<div class="quickview__shell">
     <header class="quickview__header">
       <span class="quickview__brand">${ledMark()}<span>${escapeHTML(content.brand.name)} / ${escapeHTML(content.ui.quickViewTitle)}</span></span>
-      <button type="button" class="quickview__close" data-close-quick aria-label="${escapeHTML(content.ui.close)}">${icon("close")}<span>${escapeHTML(content.ui.close)}</span></button>
+      <div class="quickview__header-actions">
+        <a class="quickview__download" href="${safeHref(content.resume.url)}" download="${escapeHTML(content.resume.downloadName)}" data-event="resume_download">
+          ${icon("download")}<span>${escapeHTML(content.ui.resumeDownload)}</span>
+        </a>
+        <button type="button" class="quickview__close" data-close-quick aria-label="${escapeHTML(content.ui.close)}">${icon("close")}<span>${escapeHTML(content.ui.close)}</span></button>
+      </div>
     </header>
     <div class="quickview__scroll" data-lenis-prevent>
       <div class="quickview__hero">
@@ -701,7 +796,7 @@ function buildQuickView(): string {
           </a>
           <button type="button" class="text-button" data-close-quick>${escapeHTML(content.ui.quickViewExit)}${icon("arrow-left")}</button>
         </div>
-        <div class="quickview__availability"><i aria-hidden="true"></i>${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</div>
+        ${statusLine("quickview__status")}
       </div>
       <nav class="quickview__toc" aria-label="${escapeHTML(content.ui.contents)}">
         <span class="micro-label">${escapeHTML(content.ui.contents)}</span>
@@ -717,19 +812,23 @@ function buildQuickView(): string {
 }
 
 function buildMobileFlow(): string {
+  const fallbackLinks = content.nav
+    .map((section) => `<li><a href="#${section.id === "home" ? "flow-home" : `flow-${section.id}`}">${escapeHTML(section.nav)}</a></li>`)
+    .join("");
   return `<section class="flow-hero" id="flow-home">
       <div class="flow-hero__copy">
         <p class="eyebrow">${escapeHTML(content.nav[0].eyebrow)}</p>
         <h1>${escapeHTML(content.identity.name)}</h1>
         <p class="flow-hero__role">${escapeHTML(content.identity.role)}</p>
         <p class="flow-hero__tagline">${escapeHTML(content.identity.tagline)}</p>
-        <p class="flow-hero__availability"><i aria-hidden="true"></i>${escapeHTML(content.ui.statusLabel)}: ${escapeHTML(content.identity.status)}</p>
+        ${statusLine("flow-hero__status")}
         <div class="flow-hero__actions">
           <button type="button" class="led-button led-button--solid" data-goto="projects"><span class="led-button__label">${escapeHTML(content.ui.viewWork)}</span>${icon("arrow-right", "led-button__icon")}</button>
           <button type="button" class="text-button" data-quick-view data-event="quick_view_open">${escapeHTML(content.ui.quickView)}${icon("arrow-up-right")}</button>
         </div>
       </div>
     </section>
+    <nav class="fallback-nav" aria-label="Portfolio sections"><h2>Read the portfolio</h2><ul>${fallbackLinks}</ul></nav>
     <div class="flow-document">
       ${renderStaticSections("flow")}
     </div>
@@ -963,6 +1062,25 @@ export function setProjectPanel(
       void active.offsetWidth;
       active.classList.add("is-entering");
       if (heading) heading.setAttribute("tabindex", "-1");
+    }
+  }
+}
+
+export function setExperiencePanel(scene: HTMLElement, open: boolean): void {
+  const indexView = scene.querySelector<HTMLElement>("[data-experience-index]");
+  const detail = scene.querySelector<HTMLElement>("[data-experience-detail]");
+  if (!indexView || !detail) return;
+  indexView.hidden = open;
+  detail.hidden = !open;
+  scene.classList.toggle("has-experience-open", open);
+  if (open) {
+    const heading = detail.querySelector<HTMLElement>("h3");
+    detail.classList.remove("is-entering");
+    void detail.offsetWidth;
+    detail.classList.add("is-entering");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
     }
   }
 }

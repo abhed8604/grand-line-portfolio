@@ -4,7 +4,7 @@ import Lenis from "lenis";
 import { content, type SectionId } from "../content";
 import type { LEDEngine } from "../engine/engine";
 import type { TargetCloud } from "../targets/target-factory";
-import { setProjectPanel, type BuiltUI } from "../ui/build";
+import { setExperiencePanel, setProjectPanel, type BuiltUI } from "../ui/build";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -22,6 +22,8 @@ export interface StoryController {
   goTo(id: SectionId, immediate?: boolean): void;
   selectProject(id: string): Promise<void>;
   closeProject(): void;
+  selectExperience(): void;
+  closeExperience(): void;
   selectedProjectId(): string | null;
   currentSection(): SectionId;
   pause(): void;
@@ -44,6 +46,7 @@ export function initStory(options: StoryOptions): StoryController {
   const sections = content.nav;
   const total = sections.length;
   const projectsScene = ui.scenes.find((scene) => scene.id === "projects")?.element;
+  const experienceScene = ui.scenes.find((scene) => scene.id === "experience")?.element;
 
   const lenis = new Lenis({
     duration: 1.15,
@@ -63,6 +66,7 @@ export function initStory(options: StoryOptions): StoryController {
   let navigationTimeout = 0;
   let projectId: string | null = null;
   let projectRequest = 0;
+  let experienceOpen = false;
 
   const setExternalHash = (id: SectionId): void => {
     if (document.body.classList.contains("quickview-open")) return;
@@ -107,6 +111,9 @@ export function initStory(options: StoryOptions): StoryController {
 
     if (projectId && next.id !== "projects") {
       closeProject(false);
+    }
+    if (experienceOpen && next.id !== "experience") {
+      closeExperience(false);
     }
 
     const cloud = options.stageClouds.get(next.id);
@@ -254,6 +261,22 @@ export function initStory(options: StoryOptions): StoryController {
     }
   };
 
+  const closeExperience = (restoreFocus = true): void => {
+    if (!experienceOpen) return;
+    experienceOpen = false;
+    if (experienceScene) setExperiencePanel(experienceScene, false);
+    if (restoreFocus) {
+      const trigger = experienceScene?.querySelector<HTMLButtonElement>("[data-experience-project]");
+      trigger?.focus({ preventScroll: true });
+    }
+  };
+
+  const selectExperience = (): void => {
+    if (!experienceScene || currentId !== "experience") return;
+    experienceOpen = true;
+    setExperiencePanel(experienceScene, true);
+  };
+
   const selectProject = async (id: string): Promise<void> => {
     const project = content.projects.entries.find((entry) => entry.id === id);
     if (!project || !projectsScene) return;
@@ -279,9 +302,13 @@ export function initStory(options: StoryOptions): StoryController {
   };
 
   const onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key === "Escape" && projectId) {
+    if (event.key !== "Escape") return;
+    if (projectId) {
       event.preventDefault();
       closeProject();
+    } else if (experienceOpen) {
+      event.preventDefault();
+      closeExperience();
     }
   };
   window.addEventListener("keydown", onKeyDown);
@@ -321,6 +348,10 @@ export function initStory(options: StoryOptions): StoryController {
     selectProject,
     closeProject() {
       closeProject();
+    },
+    selectExperience,
+    closeExperience() {
+      closeExperience();
     },
     selectedProjectId() {
       return projectId;
