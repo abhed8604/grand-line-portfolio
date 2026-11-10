@@ -123,7 +123,7 @@ export const content = {
     title: "Abhed Srivastava — LED Grand Line",
     description:
       "Portfolio of Abhed Srivastava — final-year Mechanical Engineering student at BIT Mesra (2027) working across data engineering, analytics and applied AI.",
-    ogImage: "./og.png",
+    ogImage: "https://abhed8604.github.io/grand-line-portfolio/og.png",
     themeColor: "#000000",
   },
 
@@ -156,7 +156,7 @@ export const content = {
     bioBody:
       "Built an inventory plan that raised simulated weekly profit by 9.9% under demand uncertainty.",
     bioNote:
-      "Coursework: Data Structures & Algorithms, Database Management Systems, Object-Oriented Programming.",
+      "I like turning messy operational questions into models, dashboards and decisions.",
   },
 
   nav: [
@@ -290,8 +290,7 @@ export const content = {
         period: resume.education.period,
         cgpa: resume.education.cgpa,
         coursework: [...resume.education.coursework],
-        detail:
-          "Relevant coursework: Data Structures & Algorithms, Database Management Systems, Object-Oriented Programming.",
+        detail: "",
       },
     ] satisfies EducationEntry[],
   },

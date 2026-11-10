@@ -12,7 +12,7 @@ A One Piece–inspired portfolio for **Abhed Srivastava**, focused on data engin
 - **Mobile edition:** screens narrower than 880px, or devices with a coarse pointer, use a document layout with a particle hero. The hero simulation pauses when it leaves view.
 - **Quick View:** a native dialog presents the complete portfolio without requiring the particle engine.
 - **Adaptive rendering:** GPU benchmarking selects a quality tier; when frame time stays high, the active particle budget drops in 30% steps and never increases again.
-- **Motion and atmosphere:** an SVG world map, cursor ripples, particle repulsion, shape-specific idle motion and three hidden interactions.
+- **Motion and atmosphere:** an original SVG sea chart, cursor ripples, particle repulsion, shape-specific idle motion and three hidden interactions.
 - **Readable fallback:** if WebGL initialization fails or its context is lost, the site switches to the document edition.
 
 ## Stack
@@ -94,7 +94,7 @@ When adapting the site:
 1. Update the canonical block and typed entries in `src/resume.ts`, then verify every claim and contact link. Project links currently point to a GitHub profile; replace them with individual repositories or demos as appropriate.
 2. Keep existing chapter IDs unless you also update the associated types, layouts and target-generation logic.
 3. Update the static title, description, Open Graph and Twitter tags in [`index.html`](index.html) alongside `content.meta`, so the initial HTML and share metadata match.
-4. Review decorative map labels and geometry in [`src/ui/world-map.ts`](src/ui/world-map.ts) if changing the theme; not every decorative label comes from the content module.
+4. Review decorative sea-chart labels and geometry in [`src/ui/sea-chart.ts`](src/ui/sea-chart.ts) if changing the theme; not every decorative label comes from the content module.
 5. Regenerate the resume with `npm run resume:pdf`, replace or regenerate the other public assets, then rebuild.
 
 ### Public assets
@@ -145,7 +145,7 @@ src/
     cursor.ts               Pointer effects and ripple interaction
     icons.ts                Interface icons
     quickview.ts            Plain-edition dialog behavior
-    world-map.ts            Decorative SVG chart
+    sea-chart.ts            Scroll-driven SVG sea chart
 vite.config.ts              Relative asset base and build configuration
 ```
 
@@ -161,10 +161,10 @@ Engine and target-generation modules are dynamically imported. Chapter targets a
 | ------ | ------: | ---------------------: | ------: |
 | high   | 150,016 |                    293 |     1.5 |
 | medium |  65,024 |                    127 |     1.5 |
-| low    |  16,384 |                     32 |       1 |
-| lite   |   4,096 |                      8 |       1 |
+| low    |  32,768 |                     64 |       1 |
+| lite   |   8,192 |                     16 |       1 |
 
-Mobile/coarse-pointer devices and low-memory devices default to lite quality. Desktop selection uses a short GPU benchmark and device hints; detected software renderers default to low. Adaptive quality never changes the named tier, but it reduces the active point budget during use and never restores it.
+Mobile/coarse-pointer devices default to lite quality; low-memory desktops start at low. Desktop selection uses a short GPU benchmark and device hints; detected software renderers default to low. Adaptive quality keeps the named tier but lowers the render scale before reducing the active point budget when frames run long, and restores render scale when headroom returns.
 
 For repeatable captures or troubleshooting, force a tier:
 
@@ -187,7 +187,7 @@ Valid chapter IDs are `home`, `about`, `skills`, `projects`, `education`, `exper
 - Portfolio copy is rendered as real DOM text, including a full text edition in `#accessible-content`.
 - Quick View uses a native `<dialog>` with keyboard focus handling, Escape-to-close and focus restoration.
 - Navigation, project controls and easter-egg buttons are keyboard reachable; the skip link moves focus to the main content region.
-- The no-WebGL fallback provides a gold primary action and a linked list of all eight chapters.
+- The no-WebGL fallback provides a bright ice-blue primary action and a linked list of all eight chapters.
 - `prefers-reduced-motion` reduces animation and disables smooth scrolling and cursor ripples.
 - Fine-pointer devices receive the custom cursor; touch devices do not receive a trailing cursor.
 - WebGL failure preserves the JavaScript-rendered portfolio in the readable fallback layout. This is distinct from the no-JavaScript notice, which only links to the résumé.

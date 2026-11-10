@@ -11,7 +11,7 @@
     "check": "tsc --noEmit",
     "check:resume": "npm run build && node scripts/check-resume.mjs",
     "resume:pdf": "node scripts/make-resume.mjs",
-    "test": "playwright test src/ui/build.test.ts",
+    "test": "playwright test",
     "shots": "node scripts/stages.mjs",
     "qa": "node scripts/qa-capture.mjs",
     "quick-check": "node scripts/quick-check.mjs",

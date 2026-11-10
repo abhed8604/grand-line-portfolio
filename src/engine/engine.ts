@@ -2,6 +2,7 @@ import * as THREE from "three";
 import {
   MAX_POINTS,
   MIN_POINTS,
+  MORPH_SETTLE_MS,
   QUALITY_TIERS,
   SIM_HEIGHT,
   SIM_WIDTH,
@@ -46,6 +47,7 @@ interface SimUniforms {
   uTime: THREE.IUniform<number>;
   uDelta: THREE.IUniform<number>;
   uTargetTime: THREE.IUniform<number>;
+  uMorphAge: THREE.IUniform<number>;
   uSwarm: THREE.IUniform<number>;
   uIdleDrift: THREE.IUniform<number>;
   uAttraction: THREE.IUniform<number>;
@@ -73,8 +75,10 @@ interface PositionUniforms {
   [key: string]: THREE.IUniform;
   uPositions: THREE.IUniform<THREE.Texture>;
   uVelocities: THREE.IUniform<THREE.Texture>;
+  uTargets: THREE.IUniform<THREE.Texture>;
   uSimSize: THREE.IUniform<THREE.Vector2>;
   uDelta: THREE.IUniform<number>;
+  uMorphAge: THREE.IUniform<number>;
 }
 
 function createDataTexture(data: Float32Array, width: number, height: number): THREE.DataTexture {
@@ -129,6 +133,7 @@ class GpuSimulation {
   targetTexture: THREE.DataTexture;
   private time = 0;
   private targetTime = 0;
+  private morphStartedAt = 0;
   private burstTime = -100;
   private burstOrigin = new THREE.Vector2();
   private burstStrength = 0;
@@ -196,10 +201,11 @@ class GpuSimulation {
       uTime: { value: 0 },
       uDelta: { value: 1 / 60 },
       uTargetTime: { value: 0 },
+      uMorphAge: { value: 0 },
       uSwarm: { value: 0 },
       uIdleDrift: { value: idleDrift },
-      uAttraction: { value: 27 },
-      uDamping: { value: 6.6 },
+      uAttraction: { value: 36 },
+      uDamping: { value: 7.4 },
       uReturnSpeed: { value: returnSpeed },
       uReducedMotion: { value: 0 },
       uBurstTime: { value: -100 },
@@ -222,8 +228,10 @@ class GpuSimulation {
     this.positionUniforms = {
       uPositions: { value: this.seedPosition },
       uVelocities: { value: this.seedVelocity },
+      uTargets: { value: this.targetTexture },
       uSimSize: { value: new THREE.Vector2(SIM_WIDTH, SIM_HEIGHT) },
       uDelta: { value: 1 / 60 },
+      uMorphAge: { value: 0 },
     };
 
     this.velocityMaterial = new THREE.RawShaderMaterial({
@@ -256,7 +264,9 @@ class GpuSimulation {
     this.targetTexture = texture;
     this.velocityUniforms.uTargets.value = texture;
     this.targetTime = this.time;
+    this.morphStartedAt = performance.now();
     this.velocityUniforms.uTargetTime.value = this.targetTime;
+    this.velocityUniforms.uMorphAge.value = 0;
     previous.dispose();
   }
 
@@ -281,7 +291,7 @@ class GpuSimulation {
     this.reducedMotion = reduced;
     this.velocityUniforms.uReducedMotion.value = reduced ? 1 : 0;
     this.velocityUniforms.uIdleDrift.value = reduced ? idleDrift * 0.2 : idleDrift;
-    this.velocityUniforms.uAttraction.value = reduced ? 46 : 27;
+    this.velocityUniforms.uAttraction.value = reduced ? 52 : 36;
   }
 
   burst(x: number, y: number, strength = 4200): void {
@@ -332,6 +342,7 @@ class GpuSimulation {
     u.uDelta.value = dt;
     u.uSwarm.value = this.reducedMotion ? 0 : 165;
     u.uTargetTime.value = this.targetTime;
+    u.uMorphAge.value = (performance.now() - this.morphStartedAt) / 1000;
     u.uBurstTime.value = this.burstTime;
     u.uBurstStrength.value = this.burstStrength;
     u.uSurgeTime.value = this.surgeTime;
@@ -359,7 +370,9 @@ class GpuSimulation {
     const pu = this.positionUniforms;
     pu.uPositions.value = positionTexture;
     pu.uVelocities.value = this.velocityTargets[writeVelocity].texture;
+    pu.uTargets.value = this.targetTexture;
     pu.uDelta.value = dt;
+    pu.uMorphAge.value = u.uMorphAge.value;
     renderer.setRenderTarget(this.positionTargets[writePosition]);
     renderer.setViewport(0, 0, SIM_WIDTH, this.activeRows);
 
@@ -403,8 +416,12 @@ export class LEDEngine {
   private tier: QualityTier;
   private width = window.innerWidth;
   private height = window.innerHeight;
+  private baseDpr = 1;
+  private renderScale = 1;
   private raf = 0;
   private lastFrame = 0;
+  private nextFrameAt = 0;
+  private targetFrameMs = 1000 / 60;
   private elapsed = 0;
   private frames = 0;
   private statsElapsed = 0;
@@ -435,6 +452,8 @@ export class LEDEngine {
   ) {
     this.canvas = canvas;
     this.tier = QUALITY_TIERS[options.quality];
+    this.targetFrameMs = 1000 / this.tier.targetFps;
+    this.baseDpr = Math.min(window.devicePixelRatio || 1, this.tier.dpr);
     this.activePointCount = this.tier.points;
     this.reducedMotion = Boolean(options.reducedMotion);
     this.forcedTier = Boolean(new URLSearchParams(window.location.search).get("tier"));
@@ -445,9 +464,9 @@ export class LEDEngine {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: false,
-      alpha: false,
+      alpha: true,
       stencil: false,
-      depth: true,
+      depth: false,
       powerPreference: "high-performance",
       preserveDrawingBuffer: false,
     });
@@ -459,12 +478,13 @@ export class LEDEngine {
     }
 
     this.renderer.autoClear = false;
-    this.renderer.setClearColor(0x000000, 1);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.tier.dpr));
+    this.renderer.sortObjects = false;
+    this.renderer.setClearColor(0x000000, 0);
+    this.renderer.setPixelRatio(this.baseDpr);
     this.renderer.setSize(this.width, this.height, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    this.scene.background = new THREE.Color(0x000000);
+    this.scene.background = null;
     this.camera = new THREE.OrthographicCamera(
       -this.width / 2,
       this.width / 2,
@@ -506,6 +526,7 @@ export class LEDEngine {
         uPointerActive: { value: 0 },
         uTime: { value: 0 },
         uDPR: { value: this.renderer.getPixelRatio() },
+        uExposure: { value: window.matchMedia("(max-width: 879px)").matches ? 0.68 : 0.92 },
         uPixelBoost: { value: this.tier.name === "low" || this.tier.name === "lite" ? 1.4 : 1 },
         uIdleDrift: { value: idleDrift },
         uPushRadius: { value: pushRadius },
@@ -553,6 +574,7 @@ export class LEDEngine {
   private startLoop(): void {
     if (this.raf || this.destroyed) return;
     this.lastFrame = performance.now();
+    this.nextFrameAt = 0;
     this.raf = requestAnimationFrame(this.renderFrame);
   }
 
@@ -590,6 +612,10 @@ export class LEDEngine {
 
   enableAutoQuality(): void {
     this.autoQualityEnabled = true;
+    // Ignore anything sampled before adaptive quality was switched on.
+    this.qualityElapsed = 0;
+    this.qualityFrameSum = 0;
+    this.qualityFrames = 0;
   }
 
   morphTo(cloud: TargetCloud): void {
@@ -613,12 +639,14 @@ export class LEDEngine {
       () => {
         document.body.dataset.ledState = "settled";
       },
-      this.reducedMotion ? 80 : 3000,
+      this.reducedMotion ? 80 : MORPH_SETTLE_MS,
     );
   }
 
   setQuality(name: QualityName): EngineStats {
     this.tier = QUALITY_TIERS[name];
+    this.targetFrameMs = 1000 / this.tier.targetFps;
+    this.nextFrameAt = 0;
     // The point budget only steps down for the life of the session, even if a
     // higher tier is requested later.
     this.activePointCount = Math.min(this.tier.points, this.activePointCount);
@@ -626,12 +654,20 @@ export class LEDEngine {
     this.planeGeometry.setDrawRange(0, this.activePointCount);
     this.pointsMaterial.uniforms.uPixelBoost.value =
       name === "low" || name === "lite" ? 1.4 : 1;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.tier.dpr));
-    this.renderer.setSize(this.width, this.height, false);
-    this.pointsMaterial.uniforms.uDPR.value = this.renderer.getPixelRatio();
+    this.baseDpr = Math.min(window.devicePixelRatio || 1, this.tier.dpr);
+    this.renderScale = 1;
+    this.applyRenderScale();
     const stats = this.currentStats(0);
     this.onQuality?.(stats);
     return stats;
+  }
+
+  /** Resolution is the cheapest dial: drop internal pixels before LEDs. */
+  private applyRenderScale(): void {
+    const dpr = Math.max(0.75, this.baseDpr * this.renderScale);
+    this.renderer.setPixelRatio(dpr);
+    this.renderer.setSize(this.width, this.height, false);
+    this.pointsMaterial.uniforms.uDPR.value = this.renderer.getPixelRatio();
   }
 
   /** Step the point budget down without ever stepping back up this session. */
@@ -662,26 +698,27 @@ export class LEDEngine {
     if (width === this.width && height === this.height) return;
     this.width = width;
     this.height = height;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.tier.dpr));
-    this.renderer.setSize(width, height, false);
+    this.baseDpr = Math.min(window.devicePixelRatio || 1, this.tier.dpr);
+    this.applyRenderScale();
     this.camera.left = -width / 2;
     this.camera.right = width / 2;
     this.camera.top = height / 2;
     this.camera.bottom = -height / 2;
     this.camera.updateProjectionMatrix();
-    this.pointsMaterial.uniforms.uDPR.value = this.renderer.getPixelRatio();
+    this.pointsMaterial.uniforms.uExposure.value = width <= 879 ? 0.68 : 0.92;
   }
 
   setPointer(clientX: number, clientY: number, active = true): void {
-    const rect = this.canvas.getBoundingClientRect();
     const u = this.pointsMaterial.uniforms;
     if (!active) {
       u.uPointerActive.value = 0;
       this.sim.clearPointer();
       return;
     }
-    const x = ((clientX - rect.left) / Math.max(1, rect.width)) * this.width - this.width / 2;
-    const y = this.height / 2 - ((clientY - rect.top) / Math.max(1, rect.height)) * this.height;
+    // The canvas is fixed to the viewport, so avoid a synchronous layout read
+    // on every pointermove. This matters for high-frequency mice.
+    const x = clientX - this.width / 2;
+    const y = this.height / 2 - clientY;
     (u.uPointer.value as THREE.Vector2).set(x, y);
     u.uPointerActive.value = 1;
 
@@ -702,17 +739,19 @@ export class LEDEngine {
   }
 
   addRipple(clientX: number, clientY: number, strength = 1): void {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = ((clientX - rect.left) / Math.max(1, rect.width)) * this.width - this.width / 2;
-    const y = this.height / 2 - ((clientY - rect.top) / Math.max(1, rect.height)) * this.height;
-    this.sim.addRipple(x, y, strength);
+    this.sim.addRipple(
+      clientX - this.width / 2,
+      this.height / 2 - clientY,
+      strength,
+    );
   }
 
   burstAtScreen(clientX: number, clientY: number, strength = 4200): void {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = ((clientX - rect.left) / Math.max(1, rect.width)) * this.width - this.width / 2;
-    const y = this.height / 2 - ((clientY - rect.top) / Math.max(1, rect.height)) * this.height;
-    this.sim.burst(x, y, strength);
+    this.sim.burst(
+      clientX - this.width / 2,
+      this.height / 2 - clientY,
+      strength,
+    );
   }
 
   surge(strength = 520): void {
@@ -722,6 +761,19 @@ export class LEDEngine {
   private renderFrame(now: number): void {
     this.raf = 0;
     if (this.destroyed || this.suspended.size > 0 || document.hidden) return;
+
+    // High-refresh displays (90/120/144/165 Hz) ask for more frames than the
+    // LED simulation needs. Schedule against an accumulator instead of a fixed
+    // interval: on a 90 Hz screen a fixed 16.7 ms threshold would lock the
+    // loop to 45 fps, while the accumulator averages the tier's target frame
+    // rate (with a 3:2 cadence) and keeps the simulation in real time.
+    if (this.nextFrameAt === 0) this.nextFrameAt = now;
+    if (now < this.nextFrameAt - 2) {
+      this.raf = requestAnimationFrame(this.renderFrame);
+      return;
+    }
+    this.nextFrameAt = Math.min(this.nextFrameAt, now) + this.targetFrameMs;
+
     const rawDelta = Math.max(0, (now - this.lastFrame) / 1000);
     this.lastFrame = now;
     const dt = Math.min(1 / 30, Math.max(1 / 240, rawDelta || 1 / 60));
@@ -735,14 +787,17 @@ export class LEDEngine {
     const renderer = this.renderer;
     renderer.setRenderTarget(null);
     renderer.setViewport(0, 0, renderer.domElement.width, renderer.domElement.height);
-    renderer.clear(true, true, true);
+    // The point pass has no depth buffer; clearing colour is enough.
+    renderer.clear(true, false, false);
     renderer.render(this.scene, this.camera);
 
     // Statistics and automatic quality reduction.
     this.frames += 1;
     this.statsElapsed += rawDelta;
     this.qualityElapsed += rawDelta;
-    this.qualityFrameSum += rawDelta;
+    // One-off hitches (GC, tab switch, tracing) should not make the whole
+    // artwork step down a tier; sustained slow frames still dominate.
+    this.qualityFrameSum += Math.min(rawDelta, 0.1);
     this.qualityFrames += 1;
     if (this.statsElapsed >= 1) {
       const fps = this.frames / this.statsElapsed;
@@ -755,10 +810,23 @@ export class LEDEngine {
       this.autoQualityEnabled &&
       !this.forcedTier &&
       this.elapsed > 4.5 &&
-      this.qualityElapsed >= 2
+      this.qualityElapsed >= 2.5
     ) {
       const averageFrameMs = (this.qualityFrameSum / Math.max(1, this.qualityFrames)) * 1000;
-      if (averageFrameMs > 22) this.reducePoints(0.7);
+      // Compare against the tier's own frame budget. The old fixed 22 ms
+      // threshold punished the 30 fps tiers, which are healthy at ~33 ms.
+      const budget = this.targetFrameMs;
+      if (averageFrameMs > budget * 1.24 + 1.5) {
+        if (this.renderScale > 0.81) {
+          this.renderScale = Math.max(0.8, this.renderScale - 0.1);
+          this.applyRenderScale();
+        } else {
+          this.reducePoints(0.75);
+        }
+      } else if (averageFrameMs < budget * 0.82 && this.renderScale < 1) {
+        this.renderScale = Math.min(1, this.renderScale + 0.05);
+        this.applyRenderScale();
+      }
       this.qualityElapsed = 0;
       this.qualityFrameSum = 0;
       this.qualityFrames = 0;

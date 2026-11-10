@@ -88,6 +88,7 @@ export function initCursor(options: CursorOptions): CursorController {
   let lastSpawnAt = 0;
   let rippleCursor = 0;
   let lastFrame = 0;
+  let running = false;
 
   if (finePointer) document.documentElement.classList.add("has-custom-cursor");
 
@@ -101,7 +102,14 @@ export function initCursor(options: CursorOptions): CursorController {
     active = next && finePointer;
     root.classList.toggle("is-hidden", !active || !visible || !finePointer);
     document.documentElement.classList.toggle("has-custom-cursor", active);
-    if (!active) options.onLeave?.();
+    if (active) {
+      startCursorLoop();
+    } else {
+      window.cancelAnimationFrame(raf);
+      raf = 0;
+      running = false;
+      options.onLeave?.();
+    }
   };
 
   const updateInteractive = (target: EventTarget | null): void => {
@@ -129,6 +137,14 @@ export function initCursor(options: CursorOptions): CursorController {
     ripple.element.style.top = `${y.toFixed(1)}px`;
     ripple.element.style.opacity = "0";
     options.onRipple?.(x, y, strength);
+    startCursorLoop();
+  };
+
+  const startCursorLoop = (): void => {
+    if (!finePointer || !active || !visible || running || document.hidden) return;
+    running = true;
+    lastFrame = 0;
+    raf = window.requestAnimationFrame(animate);
   };
 
   const onPointerMove = (event: PointerEvent): void => {
@@ -140,6 +156,7 @@ export function initCursor(options: CursorOptions): CursorController {
     pointerX = event.clientX;
     pointerY = event.clientY;
     setVisible(true);
+    startCursorLoop();
     updateInteractive(event.target);
     options.onMove?.(pointerX, pointerY);
 
@@ -174,6 +191,7 @@ export function initCursor(options: CursorOptions): CursorController {
       options.onRipple?.(event.clientX, event.clientY, 1.4);
       return;
     }
+    setVisible(true);
     root.classList.add("is-pressing");
     spawnRipple(event.clientX, event.clientY, 1.8);
     options.onPress?.(event.clientX, event.clientY);
@@ -198,12 +216,17 @@ export function initCursor(options: CursorOptions): CursorController {
     const dt = lastFrame === 0 ? 1 / 60 : Math.min(0.05, (now - lastFrame) / 1000);
     lastFrame = now;
 
+    let headMoving = false;
     if (active) {
-      headX += (pointerX - headX) * (reducedMotion ? 1 : 0.55);
-      headY += (pointerY - headY) * (reducedMotion ? 1 : 0.55);
+      const dx = pointerX - headX;
+      const dy = pointerY - headY;
+      headMoving = Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05;
+      headX += dx * (reducedMotion ? 1 : 0.55);
+      headY += dy * (reducedMotion ? 1 : 0.55);
       root.style.transform = `translate3d(${headX.toFixed(2)}px, ${headY.toFixed(2)}px, 0)`;
     }
 
+    let rippleActive = false;
     for (let index = 0; index < ripples.length; index += 1) {
       const ripple = ripples[index];
       if (!ripple.active) continue;
@@ -214,16 +237,22 @@ export function initCursor(options: CursorOptions): CursorController {
         ripple.element.style.opacity = "0";
         continue;
       }
+      rippleActive = true;
       const eased = 1 - (1 - progress) ** 2.6;
-      const scale = 0.18 + eased * (3.0 + ripple.strength * 0.7);
+      const scale = 0.2 + eased * (1.9 + ripple.strength * 0.5);
       const fade = (1 - progress) ** 1.85;
       ripple.element.style.transform = `translate(-50%, -50%) scale(${scale.toFixed(3)})`;
       ripple.element.style.opacity = (
-        Math.min(0.5, fade * (0.22 + ripple.strength * 0.16))
+        Math.min(0.36, fade * (0.16 + ripple.strength * 0.14))
       ).toFixed(3);
     }
 
-    raf = window.requestAnimationFrame(animate);
+    if (headMoving || rippleActive) {
+      raf = window.requestAnimationFrame(animate);
+    } else {
+      raf = 0;
+      running = false;
+    }
   };
 
   if (finePointer) {
@@ -233,7 +262,6 @@ export function initCursor(options: CursorOptions): CursorController {
     window.addEventListener("pointerup", onPointerUp, { passive: true });
     document.documentElement.addEventListener("pointerleave", onPointerLeave);
     window.addEventListener("blur", onWindowBlur);
-    raf = window.requestAnimationFrame(animate);
   } else {
     window.addEventListener("pointerdown", onPointerDown, { passive: true });
   }

@@ -154,6 +154,28 @@ export function initStory(options: StoryOptions): StoryController {
     options.onStageChange?.(next.id, clamped);
   };
 
+  // Hold the current chapter until the chart camera has actually arrived at the
+  // next island. Forward scrolling waits through the island's dwell window;
+  // backward scrolling hands off exactly on the boundary so the panel never
+  // jumps while the map is still travelling.
+  const STAGE_SETTLE = 0.06;
+  let activeStage = 0;
+  let lastRawStage = 0;
+  const stageForProgress = (progress: number): number => {
+    const raw = Math.min(1, Math.max(0, progress)) * total;
+    const boundary = Math.min(total - 1, Math.floor(raw));
+    const jumped = Math.abs(raw - lastRawStage) > 0.5;
+    lastRawStage = raw;
+    if (boundary > activeStage) {
+      // A wheel flick or scrollbar drag should land immediately; a smooth
+      // crossing waits for the camera to settle into the new island.
+      if (jumped || raw >= boundary + STAGE_SETTLE) activeStage = boundary;
+    } else if (boundary < activeStage) {
+      activeStage = boundary;
+    }
+    return activeStage;
+  };
+
   const targetScrollFor = (index: number): number => {
     const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     if (index <= 0) return 0;
@@ -168,10 +190,12 @@ export function initStory(options: StoryOptions): StoryController {
   const goTo = (id: SectionId, immediate = false): void => {
     const index = sections.findIndex((section) => section.id === id);
     if (index < 0) return;
+    if (projectId) closeProject(false);
+    if (experienceOpen) closeExperience(false);
     const target = targetScrollFor(index);
     navigatingTo = index;
+    activeStage = index;
     window.clearTimeout(navigationTimeout);
-    activate(index, immediate || reducedMotion);
 
     if (immediate || reducedMotion) {
       lenis.scrollTo(target, { immediate: true, force: true });
@@ -197,21 +221,20 @@ export function initStory(options: StoryOptions): StoryController {
       const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
       const progress = window.scrollY / maxScroll;
       navigatingTo = null;
-      activate(Math.min(total - 1, Math.floor(progress * total)), true);
+      activate(stageForProgress(progress), true);
     }, 1800);
   };
 
   const onProgress = (progress: number): void => {
     if (navigatingTo !== null) {
-      const crossed = Math.min(total - 1, Math.floor(progress * total));
+      const crossed = stageForProgress(progress);
       if (crossed === navigatingTo) {
         clearNavigation();
         activate(crossed);
       }
       return;
     }
-    const nextIndex = Math.min(total - 1, Math.floor(progress * total));
-    activate(nextIndex);
+    activate(stageForProgress(progress));
   };
 
   const trigger = ScrollTrigger.create({
@@ -303,6 +326,7 @@ export function initStory(options: StoryOptions): StoryController {
 
   const onKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== "Escape") return;
+    if (document.body.classList.contains("quickview-open")) return;
     if (projectId) {
       event.preventDefault();
       closeProject();

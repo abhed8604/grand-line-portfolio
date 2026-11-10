@@ -86,7 +86,7 @@ export function initQuickView(
       if (section) {
         event.preventDefault();
         scroll.scrollTo({
-          top: section.offsetTop - 8,
+          top: section.offsetTop - scroll.offsetTop - 8,
           behavior: options.reducedMotion ? "auto" : "smooth",
         });
       }

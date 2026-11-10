@@ -7,7 +7,7 @@ A One Piece fan-tribute portfolio built with Vite, TypeScript, and Three.js. The
 - `src/engine/` — WebGL particle simulation, shaders, motion, quality tiers
 - `src/targets/` — target shapes and cloud factory
 - `src/scroll/` — scroll-driven story controller
-- `src/ui/` — DOM UI, quick view, world map, cursor, icons
+- `src/ui/` — DOM UI, quick view, sea chart, cursor, icons
 - `src/content.ts` — portfolio content and section data
 - `scripts/` — Playwright capture, motion and QA checks
 - `public/` — static assets (OG image, resume, favicon, reference)

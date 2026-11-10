@@ -17,7 +17,7 @@ const REFERENCE_FILES: Record<string, string> = {
 
 const references = new Map<string, HTMLCanvasElement>();
 let referencePromise: Promise<void> | null = null;
-let goldLayer: CanvasRenderingContext2D | null = null;
+let accentLayer: CanvasRenderingContext2D | null = null;
 
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -98,109 +98,8 @@ export type TargetId =
   | "one-piece"
   | `project-${string}`;
 
-export interface MotionSpec {
-  type: number;
-  center: [number, number];
-  scale: number;
-}
-
 export interface TargetCloud {
-  id: string;
   data: Float32Array;
-  width: number;
-  height: number;
-  meta: {
-    title?: string;
-    mobile: boolean;
-    motion: MotionSpec;
-  };
-}
-
-/** 0 none · 1 jolly roger · 2 luffy · 3 compass · 4 ship · 5 book · 6 chart · 7 poster · 8 X */
-function motionFor(id: string, width: number, height: number, mobile: boolean): MotionSpec {
-  const world = (x: number, y: number): [number, number] => [
-    x - width / 2,
-    height / 2 - y,
-  ];
-  if (id === "home") {
-    const size = mobile
-      ? Math.min(width * 0.68, height * 0.3)
-      : Math.min(width * 0.245, height * 0.42);
-    return {
-      type: 1,
-      center: world(mobile ? width * 0.5 : width * 0.25, mobile ? height * 0.2 : height * 0.62),
-      scale: size,
-    };
-  }
-  if (id === "about") {
-    return {
-      type: 2,
-      center: world(
-        mobile ? width * 0.5 : width * 0.275,
-        mobile ? height * 0.48 : height * 0.57,
-      ),
-      scale: mobile ? Math.min(width * 0.42, height * 0.4) : height * 0.57,
-    };
-  }
-  if (id === "skills") {
-    const size = mobile
-      ? Math.min(width * 0.56, height * 0.42)
-      : Math.min(width * 0.34, height * 0.49);
-    return {
-      type: 3,
-      center: world(mobile ? width * 0.5 : width * 0.3, mobile ? height * 0.43 : height * 0.57),
-      scale: size,
-    };
-  }
-  if (id === "projects") {
-    return {
-      type: 4,
-      center: world(
-        mobile ? width * 0.5 : width * 0.32,
-        mobile ? height * 0.4 : height * 0.61,
-      ),
-      scale: mobile ? Math.min(width * 0.82, height * 0.3) : Math.min(width * 0.4, height * 0.32),
-    };
-  }
-  if (id === "education") {
-    return {
-      type: 5,
-      center: world(
-        mobile ? width * 0.5 : width * 0.65,
-        mobile ? height * 0.48 : height * 0.6,
-      ),
-      scale: mobile ? Math.min(width * 0.62, height * 0.43) : Math.min(width * 0.31, height * 0.42),
-    };
-  }
-  if (id === "experience") {
-    return {
-      type: 6,
-      center: world(
-        mobile ? width * 0.5 : width * 0.305,
-        mobile ? height * 0.47 : height * 0.6,
-      ),
-      scale: mobile ? Math.min(width * 0.86, height * 0.3) : Math.min(width * 0.45, height * 0.41),
-    };
-  }
-  if (id === "resume") {
-    const frameW = mobile ? width * 0.65 : Math.min(width * 0.34, height * 0.61);
-    return {
-      type: 7,
-      center: world(mobile ? width * 0.5 : width * 0.44, mobile ? height * 0.35 : height * 0.49),
-      scale: frameW,
-    };
-  }
-  if (id === "contact") {
-    return {
-      type: 8,
-      center: world(
-        mobile ? width * 0.5 : width * 0.305,
-        mobile ? height * 0.42 : height * 0.59,
-      ),
-      scale: mobile ? Math.min(width * 0.5, height * 0.3) : Math.min(width * 0.27, height * 0.4),
-    };
-  }
-  return { type: 0, center: [0, 0], scale: 1 };
 }
 
 interface DrawContext {
@@ -264,12 +163,12 @@ function drawRing(
   ctx.restore();
 }
 
-function paintGoldPaths(ctx: CanvasRenderingContext2D, artwork: Artwork): void {
-  if (!artwork.gold?.length) return;
+function paintAccentPaths(ctx: CanvasRenderingContext2D, artwork: Artwork): void {
+  if (!artwork.accent?.length) return;
   ctx.save();
   ctx.globalCompositeOperation = "source-over";
   ctx.setLineDash([]);
-  for (const p of artwork.gold) {
+  for (const p of artwork.accent) {
     const path = new Path2D(p.d);
     ctx.globalAlpha = p.alpha ?? 1;
     if (p.fill) {
@@ -284,20 +183,20 @@ function paintGoldPaths(ctx: CanvasRenderingContext2D, artwork: Artwork): void {
   ctx.restore();
 }
 
-function paintGoldLayer(
+function paintAccentLayer(
   artwork: Artwork,
   centerX: number,
   centerY: number,
   s: number,
 ): void {
-  if (!goldLayer || !artwork.gold?.length) return;
-  const g = goldLayer;
+  if (!accentLayer || !artwork.accent?.length) return;
+  const g = accentLayer;
   g.save();
   g.translate(centerX - (artwork.width * s) / 2, centerY - (artwork.height * s) / 2);
   g.scale(s, s);
   g.lineCap = "round";
   g.lineJoin = "round";
-  paintGoldPaths(g, artwork);
+  paintAccentPaths(g, artwork);
   g.restore();
 }
 
@@ -330,9 +229,9 @@ function drawArtwork(
       drawW,
       drawH,
     );
-    paintGoldPaths(ctx, artwork);
+    paintAccentPaths(ctx, artwork);
     ctx.restore();
-    paintGoldLayer(artwork, centerX, centerY, s);
+    paintAccentLayer(artwork, centerX, centerY, s);
     return;
   }
 
@@ -369,12 +268,12 @@ function drawArtwork(
   ctx.globalAlpha = 1;
   ctx.setLineDash([]);
   artwork.drawExtra?.(ctx);
-  paintGoldPaths(ctx, artwork);
+  paintAccentPaths(ctx, artwork);
   ctx.restore();
 
-  // Gold pixels are also painted into the mask canvas so the target cloud can
+  // Accent pixels are also painted into the mask canvas so the target cloud can
   // tag them and the render shader can shift only those particles warm.
-  paintGoldLayer(artwork, centerX, centerY, s);
+  paintAccentLayer(artwork, centerX, centerY, s);
 }
 
 function measureTracked(
@@ -564,14 +463,15 @@ function drawAbout(d: DrawContext): void {
     drawArtwork(ctx, artworks.luffy, w * 0.5, h * 0.48, w * 0.42, h * 0.4);
     return;
   }
+  // This chapter flips: readable copy sits on the left, the figure on the right.
   const titleSize = clamp(w * 0.047, 48, 82);
-  drawTracked(ctx, title, w * 0.34, h * 0.21, titleSize, { maxWidth: w * 0.46, tracking: titleSize * 0.02 });
+  drawTracked(ctx, title, w * 0.66, h * 0.21, titleSize, { maxWidth: w * 0.46, tracking: titleSize * 0.02 });
 
   const figH = h * 0.57;
-  drawArtwork(ctx, artworks.luffy, w * 0.275, h * 0.57, w * 0.34, figH);
-  drawMapRoute(ctx, [w * 0.09, h * 0.28], [w * 0.15, h * 0.25], [w * 0.21, h * 0.25], [2, 18]);
-  drawRing(ctx, w * 0.055, h * 0.28, 3.2, 1.8);
-  drawRing(ctx, w * 0.085, h * 0.28, 1.7, 1.3);
+  drawArtwork(ctx, artworks.luffy, w * 0.725, h * 0.57, w * 0.34, figH);
+  drawMapRoute(ctx, [w * 0.91, h * 0.28], [w * 0.85, h * 0.25], [w * 0.79, h * 0.25], [2, 18]);
+  drawRing(ctx, w * 0.945, h * 0.28, 3.2, 1.8);
+  drawRing(ctx, w * 0.915, h * 0.28, 1.7, 1.3);
 }
 
 function drawSkills(d: DrawContext): void {
@@ -652,14 +552,11 @@ function drawEducation(d: DrawContext): void {
     drawArtwork(ctx, artworks.book, w * 0.5, h * 0.48, w * 0.66, h * 0.4);
     return;
   }
-  const titleSize = clamp(w * 0.043, 44, 74);
-  const [firstWord, ...restWords] = title.split(" ");
-  drawTracked(ctx, firstWord, w * 0.65, h * 0.2, titleSize, { maxWidth: w * 0.34 });
-  if (restWords.length > 0) {
-    drawTracked(ctx, restWords.join(" "), w * 0.65, h * 0.2 + titleSize * 0.95, titleSize, { maxWidth: w * 0.34 });
-  }
-  drawArtwork(ctx, artworks.book, w * 0.65, h * 0.6, w * 0.31, h * 0.42);
-  drawOrbit(ctx, w * 0.65, h * 0.6, w * 0.2, h * 0.24, -0.12);
+  // Copy left, book right — mirrors the Experience chapter.
+  const titleSize = clamp(w * 0.047, 48, 82);
+  drawTracked(ctx, title, w * 0.695, h * 0.235, titleSize, { maxWidth: w * 0.44 });
+  drawArtwork(ctx, artworks.book, w * 0.695, h * 0.6, w * 0.33, h * 0.42);
+  drawOrbit(ctx, w * 0.695, h * 0.6, w * 0.22, h * 0.24, -0.12);
 }
 
 function drawExperience(d: DrawContext): void {
@@ -680,9 +577,9 @@ function drawResume(d: DrawContext): void {
   const { ctx, width: w, height: h, mobile } = d;
   const frameW = mobile ? w * 0.65 : Math.min(w * 0.34, h * 0.61);
   const frameH = mobile ? h * 0.45 : Math.min(h * 0.7, w * 0.61);
-  // Keep the poster clear of the readable resume panel on the right.
+  // This chapter flips: keep the poster on the right, clear of the resume copy.
   const rightReserve = Math.min(w * 0.34, 450) + Math.max(w * 0.16, 230);
-  const cx = mobile ? w * 0.5 : Math.max(frameW * 0.5 + 48, Math.min(w * 0.44, w - rightReserve - frameW * 0.5));
+  const cx = mobile ? w * 0.5 : Math.max(w * 0.65, w - rightReserve);
   const cy = mobile ? h * 0.35 : h * 0.49;
   drawArtwork(ctx, artworks.wantedFrame, cx, cy, frameW, frameH);
 
@@ -715,27 +612,15 @@ function drawResume(d: DrawContext): void {
       tracking: mobile ? 1 : 2,
     },
   );
-  // Bounty line built only from figures already used in the project copy.
-  const bountySize = mobile ? clamp(posterW * 0.062, 13, 18) : clamp(posterW * 0.052, 15, 22);
-  drawTracked(ctx, content.resume.bounty, cx, cy + posterH * 0.37, bountySize, {
-    maxWidth: posterW * 0.7,
-    weight: 640,
-    tracking: bountySize * 0.08,
-  });
-  if (goldLayer) {
+  if (accentLayer) {
     const accentY = cy - posterH * 0.225;
-    goldLayer.save();
-    goldLayer.lineWidth = Math.max(2, posterW * 0.008);
-    goldLayer.beginPath();
-    goldLayer.moveTo(cx - posterW * 0.18, accentY);
-    goldLayer.lineTo(cx + posterW * 0.18, accentY);
-    goldLayer.stroke();
-    goldLayer.restore();
-    drawTracked(goldLayer, content.resume.bounty, cx, cy + posterH * 0.37, bountySize, {
-      maxWidth: posterW * 0.7,
-      weight: 640,
-      tracking: bountySize * 0.08,
-    });
+    accentLayer.save();
+    accentLayer.lineWidth = Math.max(2, posterW * 0.008);
+    accentLayer.beginPath();
+    accentLayer.moveTo(cx - posterW * 0.18, accentY);
+    accentLayer.lineTo(cx + posterW * 0.18, accentY);
+    accentLayer.stroke();
+    accentLayer.restore();
   }
   drawOrbit(ctx, cx, cy, frameW * 0.66, frameH * 0.6, 0.06);
 }
@@ -879,24 +764,24 @@ export async function makeTargetCloud(id: TargetId, reducedMotion = false): Prom
     scale = Math.sqrt(maxPixels / (width * height));
   }
   const { canvas, ctx } = makeCanvas(width, height, scale);
-  const gold = makeCanvas(width, height, scale);
+  const accent = makeCanvas(width, height, scale);
   const drawContext: DrawContext = { ctx, width, height, scale, mobile, reducedMotion };
   const isProject = id.startsWith("project-");
   applyCtxTransform(ctx, drawContext);
-  applyCtxTransform(gold.ctx, drawContext);
-  goldLayer = gold.ctx;
+  applyCtxTransform(accent.ctx, drawContext);
+  accentLayer = accent.ctx;
   try {
     if (!isProject) {
       drawSparseDust(ctx, width, height, id.length * 997 + width, mobile);
     }
     drawComposition(id, drawContext);
   } finally {
-    goldLayer = null;
+    accentLayer = null;
   }
 
   const step = 2;
   const pools = collectCandidates(ctx, canvas.width, canvas.height, step);
-  const goldPixels = gold.ctx.getImageData(0, 0, gold.canvas.width, gold.canvas.height).data;
+  const accentPixels = accent.ctx.getImageData(0, 0, accent.canvas.width, accent.canvas.height).data;
   const random = makeRandom(0x1ed + id.length * 1907 + width);
   const data = new Float32Array(MAX_POINTS * TARGET_STRIDE);
   const edgeCount = pools.edge.length;
@@ -929,28 +814,22 @@ export async function makeTargetCloud(id: TargetId, reducedMotion = false): Prom
       px = (pixel % canvas.width) + (random() - 0.5) * step * 0.98;
       py = Math.floor(pixel / canvas.width) + (random() - 0.5) * step * 0.98;
     }
-    const isGold = pixel >= 0 && goldPixels[pixel * 4 + 3] > 44;
+    const isAccent = pixel >= 0 && accentPixels[pixel * 4 + 3] > 44;
     const x = px / scale - width / 2;
     const y = height / 2 - py / scale;
     const z = (random() * 2 - 1) * 34 + Math.sin(x * 0.008) * 8;
     data[i * 4] = x;
     data[i * 4 + 1] = y;
     data[i * 4 + 2] = z;
-    data[i * 4 + 3] = isGold ? -weight : weight;
+    data[i * 4 + 3] = isAccent ? -weight : weight;
   }
 
   canvas.width = 1;
   canvas.height = 1;
-  gold.canvas.width = 1;
-  gold.canvas.height = 1;
+  accent.canvas.width = 1;
+  accent.canvas.height = 1;
 
-  return {
-    id,
-    data,
-    width,
-    height,
-    meta: { mobile, title: TITLES.get(id), motion: motionFor(id, width, height, mobile) },
-  };
+  return { data };
 }
 
 export async function makeProjectTarget(

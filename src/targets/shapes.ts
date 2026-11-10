@@ -17,7 +17,7 @@ export interface Artwork {
   height: number;
   paths: Array<{ d: string; stroke?: StrokeRule; fill?: boolean; alpha?: number }>;
   cuts?: Array<{ d: string; width?: number; fill?: boolean; dash?: number[]; alpha?: number }>;
-  gold?: Array<{ d: string; stroke?: StrokeRule; fill?: boolean; alpha?: number }>;
+  accent?: Array<{ d: string; stroke?: StrokeRule; fill?: boolean; alpha?: number }>;
   drawExtra?: (ctx: CanvasRenderingContext2D) => void;
 }
 
@@ -90,7 +90,7 @@ const hatSkull: Artwork = {
     // Jaw and cheek seams.
     { d: "M300 536 C322 562 342 582 372 600 M600 536 C578 562 558 582 528 600", width: 3, dash: [6, 10] },
   ],
-  gold: [
+  accent: [
     // The straw-hat band is the one warm accent in the jolly roger.
     { d: "M232 264 C340 288 560 288 668 264", stroke: { width: 17, alpha: 0.95 } },
   ],
@@ -179,7 +179,7 @@ const luffy: Artwork = {
     // Sandal straps.
     { d: "M266 1180 L340 1202 M590 1174 L660 1196", width: 4 },
   ],
-  gold: [
+  accent: [
     // The straw hat band is the only warm note on the figure.
     { d: "M258 332 C350 358 550 358 642 332", stroke: { width: 26, alpha: 0.95 } },
   ],
@@ -334,7 +334,7 @@ const ship: Artwork = {
     // Wave highlights.
     { d: "M150 813 C210 800 250 822 306 816 M712 826 C768 812 810 830 862 822", width: 4, dash: [6, 14] },
   ],
-  gold: [
+  accent: [
     // The lion figurehead carries the ship's warm accent.
     { d: "M212 620 A104 104 0 1 0 210 828 A104 104 0 1 0 212 620 Z", stroke: { width: 8, alpha: 0.9 } },
     { d: "M212 603 L212 565 M302 654 L338 628 M308 790 L344 813 M211 846 L211 880 M117 785 L82 807 M110 653 L75 627", stroke: { width: 9, alpha: 0.8 } },

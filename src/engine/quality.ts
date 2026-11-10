@@ -33,8 +33,8 @@ export async function chooseQualityTier(): Promise<QualityName> {
   const nav = navigator as BenchNavigator;
   const cores = nav.hardwareConcurrency ?? 8;
   const memory = nav.deviceMemory ?? 8;
-  if (memory <= 4) return "lite";
-  let fallbackTier: QualityName = cores <= 4 || memory <= 4 ? "medium" : "high";
+  // A low-memory desktop still has a GPU; reserve lite for phones/tablets.
+  let fallbackTier: QualityName = cores <= 4 || memory <= 4 ? "low" : "high";
 
   let renderer: THREE.WebGLRenderer | null = null;
   let canvas: HTMLCanvasElement | null = null;
@@ -106,8 +106,8 @@ export async function chooseQualityTier(): Promise<QualityName> {
     geometry.dispose();
     material.dispose();
 
-    if (avg > 23 || cores <= 2) fallbackTier = "low";
-    else if (avg > 10.5 || cores <= 4 || memory <= 4) fallbackTier = "medium";
+    if (avg > 28 || cores <= 2) fallbackTier = "low";
+    else if (avg > 15 || cores <= 4 || memory <= 4) fallbackTier = "medium";
     else fallbackTier = "high";
   } catch {
     fallbackTier = "low";

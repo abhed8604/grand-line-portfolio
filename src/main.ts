@@ -8,7 +8,7 @@ import {
   type BuiltUI,
 } from "./ui/build";
 import { initCursor, type CursorController } from "./ui/cursor";
-import { initWorldMap } from "./ui/world-map";
+import { initSeaChart } from "./ui/sea-chart";
 import { initQuickView, type QuickViewController } from "./ui/quickview";
 import { initAnalytics, trackEvent } from "./ui/analytics";
 import { initVignettes } from "./ui/vignettes";
@@ -45,7 +45,7 @@ const particleEffects = !reducedMotion && !narrow;
 
 initAnalytics(content.analytics);
 initVignettes();
-initWorldMap(reducedMotion);
+initSeaChart(reducedMotion);
 
 cursor = initCursor({
   reducedMotion,
@@ -334,6 +334,10 @@ const finishLoader = (): void => {
       ui.loader.style.display = "none";
     }, 950);
     bootComplete = true;
+    // Start adaptive quality only after the loader and cloud generation are
+    // done. Those startup stalls used to poison the first measurement window
+    // and permanently cost the artwork a third of its LEDs.
+    engine?.enableAutoQuality();
     if (!narrow) {
       window.requestAnimationFrame(() => story?.refresh());
     }
@@ -395,7 +399,6 @@ const boot = async (): Promise<void> => {
         },
       },
     );
-    engine.enableAutoQuality();
     setEngineReadout(ui, {
       quality: quality.toUpperCase(),
       points: engine.activePoints,
@@ -415,7 +418,6 @@ const boot = async (): Promise<void> => {
     }
 
     const loaderCloud = await factory.makeTargetCloud("loader", reducedMotion);
-    targetCache.set("loader", loaderCloud);
     engine.morphTo(loaderCloud);
     setLoaderProgress(ui, 14, content.loader.statuses[1]);
 
@@ -424,7 +426,6 @@ const boot = async (): Promise<void> => {
     if (narrow) {
       const home = await factory.makeTargetCloud("home", reducedMotion);
       stageClouds.set("home", home);
-      targetCache.set("home", home);
       engine.morphTo(home);
       setLoaderProgress(ui, 76, content.loader.statuses[3]);
     } else {
@@ -432,7 +433,6 @@ const boot = async (): Promise<void> => {
         const section = content.nav[index];
         const cloud = await factory.makeTargetCloud(section.id, reducedMotion);
         stageClouds.set(section.id, cloud);
-        targetCache.set(section.id, cloud);
         const progress = 14 + ((index + 1) / content.nav.length) * 68;
         const status =
           content.loader.statuses[(index + 1) % content.loader.statuses.length];
@@ -552,28 +552,40 @@ const onModeChange = (): void => {
 modeQuery.addEventListener("change", onModeChange);
 
 let resizeTimer = 0;
+let cloudGeneration = 0;
 const onResize = (): void => {
   engine?.resize(window.innerWidth, window.innerHeight);
   window.clearTimeout(resizeTimer);
   resizeTimer = window.setTimeout(async () => {
     if (!engine || !bootComplete || failed) return;
+    const generation = ++cloudGeneration;
     targetCache.clear();
     story?.refresh();
-    const activeProject = story?.selectedProjectId();
-    const id = story?.currentSection() ?? "home";
+    const mobileNow = window.innerWidth < 880 || isCoarsePointer();
+    const chapterIds: SectionId[] = mobileNow
+      ? ["home"]
+      : content.nav.map((section) => section.id);
+    const active = story?.currentSection() ?? "home";
+    const ordered = [active, ...chapterIds.filter((id) => id !== active)];
     try {
       const factory = await import("./targets/target-factory");
-      if (activeProject) {
-        const cloud = await factory.makeProjectTarget(activeProject, reducedMotion);
-        targetCache.set(`project-${activeProject}`, cloud);
-        engine.morphTo(cloud);
-      } else {
+      for (const id of ordered) {
+        if (generation !== cloudGeneration) return;
         const cloud = await factory.makeTargetCloud(id, reducedMotion);
+        if (generation !== cloudGeneration) return;
         stageClouds.set(id, cloud);
-        engine.morphTo(cloud);
+        if (!story?.selectedProjectId() && story?.currentSection() === id) {
+          engine.morphTo(cloud);
+        }
       }
+      const projectId = story?.selectedProjectId();
+      if (!projectId || generation !== cloudGeneration) return;
+      const projectCloud = await factory.makeProjectTarget(projectId, reducedMotion);
+      if (generation !== cloudGeneration) return;
+      targetCache.set(`project-${projectId}`, projectCloud);
+      if (story?.selectedProjectId() === projectId) engine.morphTo(projectCloud);
     } catch {
-      // The existing cloud remains valid if a resize redraw cannot complete.
+      // The existing clouds remain valid if a resize redraw cannot complete.
     }
   }, 360);
 };

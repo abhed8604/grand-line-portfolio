@@ -1,3 +1,8 @@
+import {
+  MORPH_LOCK_END_SECONDS,
+  MORPH_LOCK_START_SECONDS,
+} from "./constants";
+
 export const simVertexShader = /* glsl */ `
   precision highp float;
   attribute vec3 position;
@@ -16,6 +21,7 @@ export const simVelocityShader = /* glsl */ `
   uniform float uTime;
   uniform float uDelta;
   uniform float uTargetTime;
+  uniform float uMorphAge;
   uniform float uSwarm;
   uniform float uIdleDrift;
   uniform float uAttraction;
@@ -100,31 +106,46 @@ export const simVelocityShader = /* glsl */ `
 
     float seed = hash12(uv * 931.7);
     float seed2 = hash12(uv * 331.9 + 18.2);
-    float delay = seed * 0.48;
-    float age = max(0.0, uTime - uTargetTime - delay);
-    float ramp = smoothstep(0.0, 0.48, age);
-    float settle = smoothstep(0.0, 2.5, age);
+    float delay = seed * 0.18;
+    float age = max(0.0, uMorphAge - delay);
+
+    // While the title is locked onto its target, zero the solver velocity so
+    // the snap does not leave a rebound. Normal drift resumes after 3.4s.
+    if (uMorphAge > ${MORPH_LOCK_START_SECONDS} && uMorphAge < ${MORPH_LOCK_END_SECONDS}) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+      return;
+    }
+
+    float ramp = smoothstep(0.0, 0.32, age);
+    float settle = smoothstep(0.0, 1.15, age);
     float transitionLight = 1.0 - settle;
 
     // A small, permanent drift keeps the shape alive; the larger curl is only
-    // present while the swarm is travelling.
+    // present while the swarm is travelling. Skipping four noise samples in the
+    // settled state removes most of the simulation's per-pixel cost.
     vec2 noiseField = pos.xy * 0.0042 + vec2(seed * 19.0, seed2 * 23.0);
     noiseField += vec2(uTime * 0.075, -uTime * 0.052);
-    vec2 curl = curlNoise(noiseField);
+    vec2 flow = vec2(
+      sin(noiseField.x * 1.7 + uTime * 0.34),
+      cos(noiseField.y * 1.9 - uTime * 0.29)
+    ) * 0.24;
+    if (uSwarm > 0.5 && transitionLight > 0.03) {
+      flow = curlNoise(noiseField);
+    }
     vec2 to = target.xy - pos.xy;
     float dist = length(to);
     vec2 direction = to / max(dist, 0.001);
 
     // The spring is only stiffened once the current morph has fully settled,
     // so transitions keep their original timing and easing.
-    float returnBlend = smoothstep(2.5, 3.1, age);
+    float returnBlend = smoothstep(1.1, 1.6, age);
     float spring = mix(uAttraction, uAttraction * uReturnSpeed, returnBlend);
     float attraction = spring * ramp * (0.72 + seed2 * 0.56);
     vec3 acc = vec3(to * attraction, 0.0);
 
     float swirl = (uSwarm * transitionLight + uIdleDrift) * (0.45 + seed * 1.1);
     vec2 tangent = vec2(-direction.y, direction.x);
-    acc.xy += curl * swirl * 1.35;
+    acc.xy += flow * swirl * 1.35;
     acc.xy += tangent * swirl * 0.33 * (seed2 - 0.5) * 2.0;
     acc.z += (target.z - pos.z) * 7.0 * ramp;
 
@@ -196,14 +217,22 @@ export const simPositionShader = /* glsl */ `
   precision highp float;
   uniform sampler2D uPositions;
   uniform sampler2D uVelocities;
+  uniform sampler2D uTargets;
   uniform vec2 uSimSize;
   uniform float uDelta;
+  uniform float uMorphAge;
   void main() {
     vec2 uv = gl_FragCoord.xy / uSimSize;
     vec4 pos = texture2D(uPositions, uv);
     vec3 vel = texture2D(uVelocities, uv).xyz;
-    pos.xyz += vel * uDelta;
-    gl_FragColor = vec4(pos.xyz, 1.0);
+    vec3 next = pos.xyz + vel * uDelta;
+    // Wall-clock lock: slow devices can take less than a third of the
+    // simulation steps in the same time, leaving titles permanently soft.
+    // Once the morph window is over, place the LEDs exactly on their target.
+    if (uMorphAge > ${MORPH_LOCK_START_SECONDS} && uMorphAge < ${MORPH_LOCK_END_SECONDS}) {
+      next = texture2D(uTargets, uv).xyz;
+    }
+    gl_FragColor = vec4(next, 1.0);
   }
 `;
 
@@ -243,37 +272,48 @@ export const ledVertexShader = /* glsl */ `
     float depth = clamp((led.z + 55.0) / 110.0, 0.0, 1.0);
     // Alpha in the target texture carries a per-point edge weight. Outline
     // points burn brighter and slightly larger; interior fill stays soft.
-    // A negative alpha tags that point as a gold accent.
+    // A negative alpha tags that point as an ice-blue accent.
     float targetAlpha = texture2D(uTargets, ref).a;
     float edgeWeight = abs(targetAlpha);
-    float gold = step(0.001, -targetAlpha);
+    float accentMark = step(0.001, -targetAlpha);
 
     float motion = 1.0 - uReducedMotion * 0.8;
 
-    // Every LED has its own almost-still current. Drift stays under a pixel
-    // and there is no shape-wide sway, bob, flap or breathing.
+    // Every LED carries its own current, and the whole figure breathes and
+    // sways with a slow tide so the artwork never reads as a frozen frame.
     float driftAmp = uIdleDrift * (0.35 + seed * 0.65) * motion;
     vec2 drift = vec2(
-      sin(uTime * 0.13 + seedAngle + led.y * 0.012),
-      cos(uTime * 0.11 + seed * 4.7 + led.x * 0.009)
+      sin(uTime * 0.21 + seedAngle + led.y * 0.012),
+      cos(uTime * 0.18 + seed * 4.7 + led.x * 0.009)
     ) * driftAmp;
+    drift += vec2(
+      sin(uTime * 0.37 + seed * 11.0 + led.y * 0.02),
+      cos(uTime * 0.31 + seed * 7.0 + led.x * 0.017)
+    ) * (driftAmp * 0.34);
     led.xy += drift;
+
+    float bodyMotion = 1.0 - uReducedMotion * 0.95;
+    led.xy *= 1.0 + sin(uTime * 0.28) * 0.009 * bodyMotion;
+    led.x += sin(uTime * 0.43 + led.y * 0.006) * 3.6 * bodyMotion;
+    led.y += cos(uTime * 0.37 + led.x * 0.005) * 2.8 * bodyMotion;
+    led.x += sin(uTime * 0.52 + led.y * 0.018 + seed * 3.0) * 0.9 * bodyMotion;
+    led.y += cos(uTime * 0.46 + led.x * 0.016 + seed * 2.0) * 0.7 * bodyMotion;
 
     float shapeGlow = 1.0;
 
-    // Only a small share of the field shimmers, and it does so very slowly.
-    float shimmerPick = step(0.86, seed);
-    float shimmer = 0.5 + 0.5 * sin(uTime * (0.08 + seed * 0.12) + seed * 39.0);
-    float twinkle = 0.7 + shimmer * mix(0.08, 0.3, shimmerPick);
+    // A third of the field shimmers at its own pace, with brief bright sparks.
+    float shimmerPick = step(0.68, seed);
+    float shimmer = 0.5 + 0.5 * sin(uTime * (0.18 + seed * 0.38) + seed * 39.0);
+    float twinkle = 0.7 + shimmer * mix(0.1, 0.38, shimmerPick);
 
-    float mTime = floor(uTime * 0.4);
-    float sparkle = step(0.9965, hash12(vec2(seed * 917.0, mTime + seed * 31.0)));
+    float mTime = floor(uTime * 0.5);
+    float sparkle = step(0.9955, hash12(vec2(seed * 917.0, mTime + seed * 31.0)));
     sparkle *= shimmerPick * motion * (0.4 + edgeWeight * 0.6);
-    twinkle += sparkle * 0.45;
+    twinkle += sparkle * 0.6;
 
     float near = 0.0;
     if (uPointerActive > 0.5) {
-      near = 1.0 - smoothstep(uPushRadius * 0.18, uPushRadius * 1.15, distance(led.xy, uPointer));
+      near = 1.0 - smoothstep(uPushRadius * 0.12, uPushRadius * 0.72, distance(led.xy, uPointer));
       near = clamp(near, 0.0, 1.0);
     }
 
@@ -285,21 +325,21 @@ export const ledVertexShader = /* glsl */ `
     float coolness = smoothstep(0.0, 1.0, seed);
     vec3 color = mix(deep, accent, 0.48 + coolness * 0.52);
     color = mix(color, mid, smoothstep(0.5, 1.0, seed) * 0.68);
-    color = mix(color, core, twinkle * 0.31 + depth * 0.2 + near * 0.55 + sparkle * 0.45);
+    color = mix(color, core, twinkle * 0.31 + depth * 0.2 + near * 0.3 + sparkle * 0.45);
     color = mix(color, mid, edgeWeight * 0.16);
-    vec3 goldLow = vec3(0.72, 0.47, 0.09);
-    vec3 goldHigh = vec3(1.0, 0.84, 0.35);
-    color = mix(color, mix(goldLow, goldHigh, 0.45 + twinkle * 0.55), gold);
+    vec3 accentLow = vec3(0.055, 0.31, 0.72);
+    vec3 accentHigh = vec3(0.78, 0.94, 1.0);
+    color = mix(color, mix(accentLow, accentHigh, 0.45 + twinkle * 0.55), accentMark);
     color *= shapeGlow;
 
-    float size = mix(1.55, 3.25, seed) * (0.74 + depth * 0.78);
+    float size = mix(1.45, 3.0, seed) * (0.74 + depth * 0.78);
     size *= mix(0.8, 1.16, edgeWeight);
-    size *= 1.0 + near * 1.1 + sparkle * 1.2 + gold * 0.16;
+    size *= 1.0 + near * 0.5 + sparkle * 1.2 + accentMark * 0.2;
     size *= uPixelBoost;
     gl_PointSize = clamp(size * uDPR, 1.0, 38.0);
 
     vColor = color;
-    vAlpha = (0.27 + twinkle * 0.43 + depth * 0.17) * (0.8 + near * 1.25);
+    vAlpha = (0.27 + twinkle * 0.43 + depth * 0.17) * (0.8 + near * 0.6);
     vAlpha *= shapeGlow * mix(0.62, 1.18, edgeWeight) * (1.0 + sparkle * 0.9);
     vCore = depth;
 
@@ -309,21 +349,25 @@ export const ledVertexShader = /* glsl */ `
 
 export const ledFragmentShader = /* glsl */ `
   precision highp float;
+  uniform float uExposure;
   varying vec3 vColor;
   varying float vAlpha;
   varying float vCore;
 
   void main() {
     vec2 centered = gl_PointCoord - 0.5;
-    float radius = length(centered) * 2.0;
-    if (radius > 1.0) discard;
+    // Squared-distance falloff avoids a sqrt and two pow() calls per fragment.
+    float d = dot(centered, centered) * 4.0;
+    if (d > 1.0) discard;
 
-    float halo = pow(max(0.0, 1.0 - radius), 2.1);
-    float core = pow(max(0.0, 1.0 - radius / 0.33), 2.0);
-    float alpha = (halo * 0.64 + core * 0.92) * vAlpha;
+    float haloBase = 1.0 - d;
+    float halo = haloBase * haloBase;
+    float core = max(0.0, 1.0 - d * 9.1827);
+    core *= core;
+    float alpha = (halo * 0.58 + core * 0.86) * vAlpha;
     if (alpha < 0.008) discard;
 
-    vec3 color = vColor * (0.82 + core * 0.52 + vCore * 0.14);
-    gl_FragColor = vec4(color, alpha);
+    vec3 color = vColor * (0.78 + core * 0.46 + vCore * 0.14);
+    gl_FragColor = vec4(color * uExposure, alpha);
   }
 `;

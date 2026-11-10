@@ -45,7 +45,11 @@ function statusLine(className = ""): string {
 
 function metricChip(metric: { value: string; label: string }): string {
   const wide = metric.value.length > 8 ? " metric-chip--wide" : "";
-  return `<span class="metric-chip${wide}"><strong>${escapeHTML(metric.value)}</strong><span>${escapeHTML(metric.label)}</span></span>`;
+  const positive = metric.value.startsWith("+");
+  const value = positive
+    ? `<span class="metric-sign" aria-hidden="true">+</span>${escapeHTML(metric.value.slice(1))}`
+    : escapeHTML(metric.value);
+  return `<span class="metric-chip${wide}"><strong>${value}</strong><span>${escapeHTML(metric.label)}</span></span>`;
 }
 
 function makeScene(
@@ -90,11 +94,9 @@ function buildAbout(section: (typeof content.nav)[number], index: number, total:
       <p class="lead">${escapeHTML(content.identity.bioLead)}</p>
       <p class="body-copy">${escapeHTML(content.identity.bioBody)}</p>
       <p class="aside-note">${escapeHTML(content.identity.bioNote)}</p>
-      ${statusLine("about-panel__status")}
       <dl class="fact-list">
         <div><dt>${escapeHTML(content.resume.facts[1].label)}</dt><dd>${escapeHTML(content.identity.location)}</dd></div>
         <div><dt>${escapeHTML(content.resume.facts[0].label)}</dt><dd>${escapeHTML(content.identity.role)}</dd></div>
-        <div><dt>${escapeHTML(content.resume.facts[2].label)}</dt><dd>${escapeHTML(content.resume.facts[2].value)}</dd></div>
       </dl>
       <h2 id="scene-title-about" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
     </div>`,
@@ -432,7 +434,6 @@ function buildContact(section: (typeof content.nav)[number], index: number, tota
     `<div class="contact-panel" data-reveal>
       <h2 id="scene-title-contact" class="sr-only">${escapeHTML(section.title)} — ${escapeHTML(section.eyebrow)}</h2>
       <p class="lead">${escapeHTML(content.contact.intro)}</p>
-      ${statusLine("contact-panel__status")}
       <ul class="contact-list">${links}</ul>
       <div class="contact-panel__actions">
         ${emailAction}
@@ -619,14 +620,14 @@ function renderStaticSections(prefix: string): string {
       (entry) => `<li class="static-entry">
         <div class="static-entry__heading"><h3>${escapeHTML(entry.institution)}</h3><span>${escapeHTML(entry.period)}</span></div>
         <p class="static-entry__role">${escapeHTML(entry.qualification)} · CGPA ${escapeHTML(entry.cgpa)}</p>
-        <p>${escapeHTML(entry.detail)}</p>
         <ul class="tag-list">${entry.coursework.map((course) => `<li>${escapeHTML(course)}</li>`).join("")}</ul>
       </li>`,
     )
     .join("");
   const experience = content.experience.entries
     .map((entry) => {
-      const bullets = entry.bullets?.length
+      const summary = entry.type === "internship" ? "" : `<p>${escapeHTML(entry.detail)}</p>`;
+      const bullets = entry.type !== "internship" && entry.bullets?.length
         ? `<ul class="static-entry__bullets">${entry.bullets.map((bullet) => `<li>${escapeHTML(bullet)}</li>`).join("")}</ul>`
         : "";
       const metrics = entry.metrics?.length
@@ -644,7 +645,7 @@ function renderStaticSections(prefix: string): string {
       return `<li class="static-entry">
         <div class="static-entry__heading"><h3>${escapeHTML(entry.role)}</h3><span>${escapeHTML(entry.period)}</span></div>
         <p class="static-entry__role"><span class="type-badge type-badge--${entry.type}">${escapeHTML(content.ui.experienceTypes[entry.type])}</span> <span>${escapeHTML(entry.place)}</span></p>
-        <p>${escapeHTML(entry.detail)}</p>
+        ${summary}
         ${bullets}
         ${metrics}
         ${projectLink}
@@ -670,11 +671,9 @@ function renderStaticSections(prefix: string): string {
         <p class="lead">${escapeHTML(content.identity.bioLead)}</p>
         <p>${escapeHTML(content.identity.bioBody)}</p>
         <p class="aside-note">${escapeHTML(content.identity.bioNote)}</p>
-        ${statusLine("static-status")}
         <dl class="fact-list">
           <div><dt>${escapeHTML(content.resume.facts[1].label)}</dt><dd>${escapeHTML(content.identity.location)}</dd></div>
           <div><dt>${escapeHTML(content.resume.facts[0].label)}</dt><dd>${escapeHTML(content.identity.role)}</dd></div>
-          <div><dt>${escapeHTML(content.resume.facts[2].label)}</dt><dd>${escapeHTML(content.resume.facts[2].value)}</dd></div>
         </dl>
       </div>
     </section>
@@ -751,7 +750,6 @@ function renderStaticSections(prefix: string): string {
       </header>
       <div class="static-section__content">
         <p class="lead">${escapeHTML(content.contact.intro)}</p>
-        ${statusLine("static-status")}
         <ul class="static-contact-list">${contact}</ul>
         <div class="static-contact__actions">
           ${emailAction}
@@ -855,13 +853,13 @@ function buildAccessibleContent(): string {
   const education = content.education.entries
     .map(
       (entry) =>
-        `<li><strong>${escapeHTML(entry.institution)}</strong>, ${escapeHTML(entry.qualification)} (${escapeHTML(entry.period)}). ${escapeHTML(entry.detail)}</li>`,
+        `<li><strong>${escapeHTML(entry.institution)}</strong>, ${escapeHTML(entry.qualification)} (${escapeHTML(entry.period)}).</li>`,
     )
     .join("");
   const experience = content.experience.entries
     .map(
       (entry) =>
-        `<li><strong>${escapeHTML(content.ui.experienceTypes[entry.type])}: ${escapeHTML(entry.role)}</strong> at ${escapeHTML(entry.place)} (${escapeHTML(entry.period)}). ${escapeHTML(entry.detail)}</li>`,
+        `<li><strong>${escapeHTML(content.ui.experienceTypes[entry.type])}: ${escapeHTML(entry.role)}</strong> at ${escapeHTML(entry.place)} (${escapeHTML(entry.period)}).${entry.type === "internship" ? "" : ` ${escapeHTML(entry.detail)}`}</li>`,
     )
     .join("");
   const contact = content.contact.links
@@ -1055,6 +1053,10 @@ export function setProjectPanel(
   }
   scene.classList.toggle("has-project-open", Boolean(target));
   if (target) {
+    detailsWrap.scrollTop = 0;
+    detailsWrap.closest<HTMLElement>(".project-dock")?.scrollTo({ top: 0 });
+    const dock = scene.querySelector<HTMLElement>(".project-dock");
+    if (dock) dock.scrollTop = 0;
     const active = scene.querySelector<HTMLElement>(`[data-project-panel="${CSS.escape(projectId ?? "")}"]`);
     if (active) {
       const heading = active.querySelector<HTMLElement>("h3");
@@ -1074,6 +1076,9 @@ export function setExperiencePanel(scene: HTMLElement, open: boolean): void {
   detail.hidden = !open;
   scene.classList.toggle("has-experience-open", open);
   if (open) {
+    detail.scrollTop = 0;
+    const panel = scene.querySelector<HTMLElement>(".experience-panel");
+    if (panel) panel.scrollTop = 0;
     const heading = detail.querySelector<HTMLElement>("h3");
     detail.classList.remove("is-entering");
     void detail.offsetWidth;
